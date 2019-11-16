@@ -16,8 +16,8 @@
 #define ENCODER_TYPE 1 // тип энкодера (0 или 1).
 // *********************** ПАРАМЕТРЫ ЛЕНТЫ ***********************
 
-#define STRIP_BRIGHTNESS 100            // яркость ленты
-#define STRIP_COLOR CRGB(200, 255, 255) // Цвет
+#define STRIP_BRIGHTNESS 100       // яркость ленты
+#define STRIP_COLOR CRGB::LightCyan // Цвет
 #define STRIP_LEDS 67      // количество светодиодов
 #define STRIP_TYPE WS2812B // тип ленты
 #define COLOR_ORDER GRB    // последовательность цветов
@@ -94,7 +94,7 @@ void loop() {
 }
 void ledStripTick() {
   if (timerStrip.isReady()) {
-    if (stripMode == 0) {
+    if (stripMode == 0) { // Default color
       endabled_led_count = constrain(endabled_led_count, 0, STRIP_LEDS);
       for (int dot = 0; dot < STRIP_LEDS; dot++) {
         if (dot < endabled_led_count) {
@@ -108,6 +108,15 @@ void ledStripTick() {
       static uint8_t startIndex = 0;
       startIndex = startIndex + 1; /* motion speed */
       FillLEDsFromPaletteColors(startIndex);
+      FastLED.show();
+    } else if (stripMode == 2) { // DarkOrange
+      for (int dot = 0; dot < STRIP_LEDS; dot++) {
+        if (dot < endabled_led_count) {
+          leds[dot] = CRGB::DarkOrange;
+        } else {
+          leds[dot] = CRGB::Black;
+        }
+      }
       FastLED.show();
     }
   }
@@ -273,11 +282,11 @@ void encoderTick() {
   }
   if (enc.isLeftH()) {
     stripMode--;
-    stripMode = constrain(stripMode, 0, 1);
+    stripMode = constrain(stripMode, 0, 2);
   }
   if (enc.isRightH()) {
     stripMode++;
-    stripMode = constrain(stripMode, 0, 1);
+    stripMode = constrain(stripMode, 0, 2);
   }
 
   // *********** УДЕРЖАНИЕ ЭНКОДЕРА **********
