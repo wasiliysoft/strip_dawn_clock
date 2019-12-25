@@ -16,7 +16,7 @@
 #define ENCODER_TYPE 1 // тип энкодера (0 или 1).
 // *********************** ПАРАМЕТРЫ ЛЕНТЫ ***********************
 
-#define STRIP_BRIGHTNESS 100       // яркость ленты
+#define STRIP_BRIGHTNESS 100        // яркость ленты
 #define STRIP_COLOR CRGB::LightCyan // Цвет
 #define STRIP_LEDS 67      // количество светодиодов
 #define STRIP_TYPE WS2812B // тип ленты
@@ -54,6 +54,9 @@ boolean alarm_enabled = true;
 boolean blinkFlag = false; //техническая переменная
 boolean buzzFlag = false;  //техническая переменная
 int ledBright = 0;         //техническая переменная
+boolean isLostPower = false; // была потеря питания на часах
+unsigned int timerLEDcounter = 0; // счетчик для индикации потери питания
+
 int endabled_led_count = 0;
 int mode = 0;      // 0 держурный 1 рассвет 2 будильник
 int stripMode = 0; // 0 белый 1 радуга
@@ -62,20 +65,36 @@ void setup() {
   pinMode(BUZZ_PIN, OUTPUT);
 
   Serial.begin(9600);
-  delay(100);
+  delay(3000);
   FastLED.addLeds<STRIP_TYPE, STRIP_PIN, COLOR_ORDER>(leds, STRIP_LEDS)
       .setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(STRIP_BRIGHTNESS);
   SCmd.addCommand("a", settingAlarm);
   SCmd.addCommand("t", settingTime);
 
-  rtc.begin();
-  syncRTCTime();
   alm_hrs = EEPROM.read(0);
   alm_mins = EEPROM.read(1);
   alarm_enabled = EEPROM.read(2);
   alm_hrs = constrain(alm_hrs, 0, 23);
   alm_mins = constrain(alm_mins, 0, 59);
+
+  if (!rtc.begin()) {
+    Serial.println("Couldn't find RTC");
+    while (1) {
+    };
+  }
+
+  if (rtc.lostPower()) {
+    Serial.println("RTC lost power, lets set the time!");
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    isLostPower = true;
+    alarm_enabled = false;
+    analogWrite(BUZZ_PIN, BUZZ_BRIGHT);
+    delay(500);
+    digitalWrite(BUZZ_PIN, LOW);
+  }
+  syncRTCTime();
+
   calculateDawn();
   printStatus();
   twoBeep();
@@ -151,6 +170,7 @@ void settingTime() {
     mins = atoi(arg2);
     rtc.adjust(DateTime(2014, 1, 21, hrs, mins,
                         0)); // установка нового времени в RTC модуль
+    isLostPower = false;
     Serial.println("Saved settings");
     printStatus();
     twoBeep();
@@ -199,7 +219,22 @@ void dawnTick() {
 }
 
 void indicatorTick() {
+
   if (timerLED.isReady()) {
+    if (isLostPower) {
+      timerLEDcounter++;
+      if (timerLEDcounter > 5) {
+        timerLEDcounter = 0;
+        blinkFlag = !blinkFlag;
+      }
+      if (blinkFlag) {
+        digitalWrite(LED_PIN, HIGH);
+      } else {
+        digitalWrite(LED_PIN, LOW);
+      }
+      return;
+    }
+
     if (alarm_enabled) {
       if (blinkFlag) {
         ledBright++;
