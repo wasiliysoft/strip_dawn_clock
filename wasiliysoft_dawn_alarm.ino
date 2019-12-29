@@ -208,6 +208,11 @@ void timeTick() {
     } else {
       mode = 0; // ожидание
     }
+    // Автоматическое включение радуги, новый год же!
+    if (hrs == 17 && mins == 0) {
+      endabled_led_count = STRIP_LEDS;
+      stripMode = 1;
+    }
   }
 }
 void dawnTick() {
@@ -266,6 +271,10 @@ void printStatus() {
   Serial.print(alm_hrs);
   Serial.print(":");
   Serial.print(alm_mins);
+  Serial.print(" dawn start ");
+  Serial.print(dwn_hrs);
+  Serial.print(":");
+  Serial.print(dwn_mins);
   Serial.print(" alarm mode ");
   if (alarm_enabled) {
     Serial.print("on");
@@ -278,8 +287,8 @@ void printStatus() {
 void calculateDawn() {
 
   // расчёт времени рассвета
-  if (alm_mins > DAWN_TIME) {
-    // если минут во времени будильника больше продолжительности рассвета
+  if (alm_mins >= DAWN_TIME) {
+    // если минут во времени будильника больше или равно продолжительности рассвета
     dwn_hrs = alm_hrs; // час рассвета равен часу будильника
     dwn_mins = alm_mins - DAWN_TIME;
   } else {
