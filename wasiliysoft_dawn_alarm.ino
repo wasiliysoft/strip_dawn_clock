@@ -113,31 +113,29 @@ void loop() {
 }
 void ledStripTick() {
   if (timerStrip.isReady()) {
+    endabled_led_count = constrain(endabled_led_count, 0, STRIP_LEDS);
     if (stripMode == 0) { // Default color
-      endabled_led_count = constrain(endabled_led_count, 0, STRIP_LEDS);
       for (int dot = 0; dot < STRIP_LEDS; dot++) {
         if (dot < endabled_led_count) {
-          leds[dot] = STRIP_COLOR;
+          leds[STRIP_LEDS - 1 - dot] = STRIP_COLOR;
         } else {
-          leds[dot] = CRGB::Black;
+          leds[STRIP_LEDS - 1 - dot] = CRGB::Black;
         }
       }
-      FastLED.show();
-    } else if (stripMode == 1) {
+    } else if (stripMode == 1) { // RainbowColors
       static uint8_t startIndex = 0;
       startIndex = startIndex + 1; /* motion speed */
       FillLEDsFromPaletteColors(startIndex);
-      FastLED.show();
     } else if (stripMode == 2) { // DarkOrange
       for (int dot = 0; dot < STRIP_LEDS; dot++) {
         if (dot < endabled_led_count) {
-          leds[dot] = CRGB::DarkOrange;
+          leds[STRIP_LEDS - 1 - dot] = CRGB::DarkOrange;
         } else {
-          leds[dot] = CRGB::Black;
+          leds[STRIP_LEDS - 1 - dot] = CRGB::Black;
         }
       }
-      FastLED.show();
     }
+    FastLED.show();
   }
 }
 void syncRTCTime() {
@@ -288,7 +286,8 @@ void calculateDawn() {
 
   // расчёт времени рассвета
   if (alm_mins >= DAWN_TIME) {
-    // если минут во времени будильника больше или равно продолжительности рассвета
+    // если минут во времени будильника больше или равно продолжительности
+    // рассвета
     dwn_hrs = alm_hrs; // час рассвета равен часу будильника
     dwn_mins = alm_mins - DAWN_TIME;
   } else {
@@ -319,6 +318,7 @@ void encoderTick() {
   if (enc.isRight()) {
     endabled_led_count = endabled_led_count + 4;
     endabled_led_count = constrain(endabled_led_count, 0, STRIP_LEDS);
+    Serial.println(endabled_led_count);
   }
   if (enc.isLeft()) {
     endabled_led_count = endabled_led_count - 2;
@@ -343,11 +343,11 @@ void encoderTick() {
 void FillLEDsFromPaletteColors(uint8_t colorIndex) {
   for (int dot = 0; dot < STRIP_LEDS; dot++) {
     if (dot < endabled_led_count) {
-      leds[dot] =
+      leds[STRIP_LEDS - 1 - dot] =
           ColorFromPalette(RainbowColors_p, colorIndex, 255, LINEARBLEND);
-      colorIndex += 2;
+      colorIndex -= 2;
     } else {
-      leds[dot] = CRGB::Black;
+      leds[STRIP_LEDS - 1 - dot] = CRGB::Black;
     }
   }
 }
@@ -355,7 +355,7 @@ void FillLEDsFromPaletteColors(uint8_t colorIndex) {
 void downStrip() {
   endabled_led_count = constrain(endabled_led_count, 0, STRIP_LEDS);
   for (int dot = endabled_led_count; dot >= 0; dot--) {
-    leds[dot] = CRGB::Black;
+    leds[STRIP_LEDS - 1 - dot] = CRGB::Black;
     FastLED.show();
     delay(30);
   }
