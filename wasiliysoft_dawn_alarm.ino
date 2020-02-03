@@ -16,7 +16,7 @@
 #define ENCODER_TYPE 1 // тип энкодера (0 или 1).
 // *********************** ПАРАМЕТРЫ ЛЕНТЫ ***********************
 
-#define STRIP_BRIGHTNESS 100        // яркость ленты
+#define STRIP_BRIGHTNESS 150        // яркость ленты
 #define STRIP_COLOR CRGB::LightCyan // Цвет
 #define STRIP_LEDS 67      // количество светодиодов
 #define STRIP_TYPE WS2812B // тип ленты
@@ -59,13 +59,13 @@ unsigned int timerLEDcounter = 0; // счетчик для индикации п
 
 int endabled_led_count = 0;
 int mode = 0;      // 0 держурный 1 рассвет 2 будильник
-int stripMode = 0; // 0 белый 1 радуга
+int stripMode = 0; // 0-белый 1-радуга 2-оранжевый
 void setup() {
   pinMode(LED_PIN, OUTPUT);
   pinMode(BUZZ_PIN, OUTPUT);
 
   Serial.begin(9600);
-  delay(3000);
+  delay(1000);
   FastLED.addLeds<STRIP_TYPE, STRIP_PIN, COLOR_ORDER>(leds, STRIP_LEDS)
       .setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(STRIP_BRIGHTNESS);
@@ -207,10 +207,12 @@ void timeTick() {
       mode = 0; // ожидание
     }
     // Автоматическое включение радуги, новый год же!
+    /*
     if (hrs == 17 && mins == 0) {
       endabled_led_count = STRIP_LEDS;
       stripMode = 1;
     }
+    */
   }
 }
 void dawnTick() {
