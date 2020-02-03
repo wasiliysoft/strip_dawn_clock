@@ -2,5 +2,5 @@
     "sketch": "wasiliysoft_dawn_alarm.ino",
     "board": "arduino:avr:nano",
     "configuration": "cpu=atmega328old",
-    "port": "/dev/ttyUSB0"
+    "port": "COM3"
 }
