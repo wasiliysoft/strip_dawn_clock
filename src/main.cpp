@@ -47,18 +47,26 @@ GTimer_ms timerDAWN(DAWN_TIME * 60000 / STRIP_LEDS);
 
 SerialCommand SCmd;
 
-int8_t hrs, mins;
-int8_t alm_hrs, alm_mins;
-int8_t dwn_hrs, dwn_mins;
-boolean alarm_enabled = true;
-boolean blinkFlag = false; //техническая переменная
-boolean buzzFlag = false;  //техническая переменная
-int ledBright = 0;         //техническая переменная
+struct {
+  int8_t h, m;
+} clock;
+
+struct {
+  int8_t h, m;
+  boolean enabled = true;
+  // boolean buzzer = false;
+} alarm;
+
+struct {
+  int8_t h, m;
+} dawn;
+
 boolean isLostPower = false; // была потеря питания на часах
-unsigned int timerLEDcounter = 0; // счетчик для индикации потери питания
 
 int endabled_led_count = 0;
-int mode = 0;      // 0 держурный 1 рассвет 2 будильник
+enum Modes { STANDBY, DAWN, ALARM };
+Modes mode = STANDBY;
+
 int stripMode = 0; // 0-белый 1-радуга 2-оранжевый
 void setup() {
   pinMode(LED_PIN, OUTPUT);
@@ -72,11 +80,11 @@ void setup() {
   SCmd.addCommand("a", settingAlarm);
   SCmd.addCommand("t", settingTime);
 
-  alm_hrs = EEPROM.read(0);
-  alm_mins = EEPROM.read(1);
-  alarm_enabled = EEPROM.read(2);
-  alm_hrs = constrain(alm_hrs, 0, 23);
-  alm_mins = constrain(alm_mins, 0, 59);
+  alarm.h = EEPROM.read(0);
+  alarm.m = EEPROM.read(1);
+  alarm.enabled = EEPROM.read(2);
+  alarm.h = constrain(alarm.h, 0, 23);
+  alarm.m = constrain(alarm.m, 0, 59);
 
   if (!rtc.begin()) {
     Serial.println("Couldn't find RTC");
@@ -88,7 +96,7 @@ void setup() {
     Serial.println("RTC lost power, lets set the time!");
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
     isLostPower = true;
-    alarm_enabled = false;
+    alarm.enabled = false;
     analogWrite(BUZZ_PIN, BUZZ_BRIGHT);
     delay(500);
     digitalWrite(BUZZ_PIN, LOW);
@@ -139,19 +147,18 @@ void ledStripTick() {
   }
 }
 void syncRTCTime() {
-  DateTime now = rtc.now();
-  hrs = now.hour();
-  mins = now.minute();
+  clock.h = rtc.now().hour();
+  clock.m = rtc.now().minute();
 }
 
 void settingAlarm() {
   char *arg1 = SCmd.next();
   char *arg2 = SCmd.next();
   if (arg1 != NULL && arg2 != NULL) {
-    alm_hrs = atoi(arg1);
-    alm_mins = atoi(arg2);
-    EEPROM.update(0, alm_hrs);  // сохраняем будильник
-    EEPROM.update(1, alm_mins); // сохраняем будильник
+    alarm.h = atoi(arg1);
+    alarm.m = atoi(arg2);
+    EEPROM.update(0, alarm.h); // сохраняем будильник
+    EEPROM.update(1, alarm.m); // сохраняем будильник
     calculateDawn(); // пересчет времени рассвета
     Serial.println("Saved settings");
     printStatus();
@@ -164,9 +171,9 @@ void settingTime() {
   char *arg1 = SCmd.next();
   char *arg2 = SCmd.next();
   if (arg1 != NULL && arg2 != NULL) {
-    hrs = atoi(arg1);
-    mins = atoi(arg2);
-    rtc.adjust(DateTime(2014, 1, 21, hrs, mins,
+    clock.h = atoi(arg1);
+    clock.m = atoi(arg2);
+    rtc.adjust(DateTime(2014, 1, 21, clock.h, clock.m,
                         0)); // установка нового времени в RTC модуль
     isLostPower = false;
     Serial.println("Saved settings");
@@ -196,15 +203,15 @@ void buzzTick() {
 void timeTick() {
   if (timerMinute.isReady()) {
     syncRTCTime();
-    if (alarm_enabled) {
-      if (hrs == dwn_hrs && mins == dwn_mins) {
-        mode = 1; // рассвет
+    if (alarm.enabled) {
+      if (clock.h == dawn.h && clock.m == dawn.m) {
+        mode = DAWN;
       }
-      if (hrs == alm_hrs && mins == alm_mins && mode == 1) {
-        mode = 2; // будильник
+      if (clock.h == alarm.h && clock.m == alarm.m && mode == DAWN) {
+        mode = ALARM;
       }
     } else {
-      mode = 0; // ожидание
+      mode = STANDBY;
     }
     // Автоматическое включение радуги, новый год же!
     /*
@@ -216,7 +223,7 @@ void timeTick() {
   }
 }
 void dawnTick() {
-  if (alarm_enabled && mode > 0) {
+  if (alarm.enabled && mode != STANDBY) {
     if (timerDAWN.isReady()) {
       endabled_led_count++;
     }
@@ -227,12 +234,15 @@ void indicatorTick() {
 
   if (timerLED.isReady()) {
     if (isLostPower) {
-      timerLEDcounter++;
-      if (timerLEDcounter > 5) {
-        timerLEDcounter = 0;
-        blinkFlag = !blinkFlag;
+      static int8_t s_counterToSwichIndicatorState = 0;
+      static bool s_blinkFlag = false;
+      s_counterToSwichIndicatorState++;
+
+      if (s_counterToSwichIndicatorState > 5) {
+        s_counterToSwichIndicatorState = 0;
+        s_blinkFlag = !s_blinkFlag;
       }
-      if (blinkFlag) {
+      if (s_blinkFlag) {
         digitalWrite(LED_PIN, HIGH);
       } else {
         digitalWrite(LED_PIN, LOW);
@@ -240,21 +250,20 @@ void indicatorTick() {
       return;
     }
 
-    if (alarm_enabled) {
-      if (blinkFlag) {
-        ledBright++;
-      } else {
-        ledBright = ledBright - 3;
+    if (alarm.enabled) {
+      static int8_t indicatorBright = 0;
+      static int8_t step = 1;
+
+      indicatorBright = indicatorBright + step;
+      if (indicatorBright > LED_BRIGHT && step > 0) {
+        indicatorBright = LED_BRIGHT;
+        step = -3;
       }
-      if (ledBright >= LED_BRIGHT) {
-        ledBright = LED_BRIGHT;
-        blinkFlag = false;
+      if (indicatorBright < 0 && step < 0) {
+        indicatorBright = 0;
+        step = 1;
       }
-      if (ledBright <= 0) {
-        ledBright = 0;
-        blinkFlag = true;
-      }
-      analogWrite(LED_PIN, ledBright);
+      analogWrite(LED_PIN, indicatorBright);
     } else {
       digitalWrite(LED_PIN, LOW);
     }
@@ -264,19 +273,19 @@ void indicatorTick() {
 void printStatus() {
   Serial.println("");
   Serial.print("time ");
-  Serial.print(hrs);
+  Serial.print(clock.h);
   Serial.print(":");
-  Serial.print(mins);
+  Serial.print(clock.m);
   Serial.print(" alarm ");
-  Serial.print(alm_hrs);
+  Serial.print(alarm.h);
   Serial.print(":");
-  Serial.print(alm_mins);
+  Serial.print(alarm.m);
   Serial.print(" dawn start ");
-  Serial.print(dwn_hrs);
+  Serial.print(dawn.h);
   Serial.print(":");
-  Serial.print(dwn_mins);
+  Serial.print(dawn.m);
   Serial.print(" alarm mode ");
-  if (alarm_enabled) {
+  if (alarm.enabled) {
     Serial.print("on");
   } else {
     Serial.print("off");
@@ -285,28 +294,26 @@ void printStatus() {
 }
 
 void calculateDawn() {
-
   // расчёт времени рассвета
-  if (alm_mins >= DAWN_TIME) {
+  if (alarm.m >= DAWN_TIME) {
     // если минут во времени будильника больше или равно продолжительности
     // рассвета
-    dwn_hrs = alm_hrs; // час рассвета равен часу будильника
-    dwn_mins = alm_mins - DAWN_TIME;
+    dawn.h = alarm.h; // час рассвета равен часу будильника
+    dawn.m = alarm.m - DAWN_TIME;
   } else {
     // если минут во времени будильника меньше продолжительности рассвета
-    dwn_hrs = alm_hrs - 1; // значит рассвет будет часом раньше
-    if (dwn_hrs < 0)
-      dwn_hrs = 23; // защита от совсем поехавших
-    dwn_mins =
-        60 - (DAWN_TIME - alm_mins); // находим минуту рассвета в новом часе
+    dawn.h = alarm.h - 1; // значит рассвет будет часом раньше
+    if (dawn.h < 0)
+      dawn.h = 23; // защита от совсем поехавших
+    dawn.m = 60 - (DAWN_TIME - alarm.m); // находим минуту рассвета в новом часе
   }
 }
 
 void encoderTick() {
   enc.tick(); // работаем с энкодером
   if (enc.isClick()) {
-    if (mode > 0) {
-      mode = 0;
+    if (mode != STANDBY) {
+      mode = STANDBY;
       oneBeep();
       return;
     }
@@ -337,8 +344,8 @@ void encoderTick() {
 
   // *********** УДЕРЖАНИЕ ЭНКОДЕРА **********
   if (enc.isHolded()) {
-    alarm_enabled = !alarm_enabled;
-    EEPROM.update(2, alarm_enabled); // сохраняем состояние будильника
+    alarm.enabled = !alarm.enabled;
+    EEPROM.update(2, alarm.enabled); // сохраняем состояние будильника
     twoBeep();
   }
 }
