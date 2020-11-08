@@ -187,22 +187,21 @@ void timeTick() {
 }
 void dawnTick() {
   static GTimer_ms timer((DAWN_TIME * 60000) / (STRIP_LEDS * STRIP_BRIGHTNESS));
-  static uint8_t dot = STRIP_LEDS;
   static uint8_t dotBridhtnes = 0;
-
   if (alarm.enabled && mode != STANDBY) {
     if (timer.isReady()) {
       dotBridhtnes++;
       if (dotBridhtnes == STRIP_BRIGHTNESS) {
         dotBridhtnes = 0;
-        dot--;
-        dot = constrain(dot, 0, STRIP_LEDS);
+        strip.enabledLedsCount++;
+        strip.enabledLedsCount =
+            constrain(strip.enabledLedsCount, 0, STRIP_LEDS);
       }
-      strip.leds[dot] = CHSV(HUE_ORANGE, 200, dotBridhtnes);
+      strip.leds[STRIP_LEDS - 1 - strip.enabledLedsCount] =
+          CHSV(HUE_ORANGE, 200, dotBridhtnes);
       FastLED.show();
     }
   } else {
-    dot = STRIP_LEDS;
     dotBridhtnes = 0;
   }
 }
@@ -336,21 +335,31 @@ void updateStripTick() {
   }
 }
 
+void stripDown() {
+  for (int dot = strip.enabledLedsCount; dot >= 0; dot--) {
+    strip.leds[STRIP_LEDS - 1 - dot] = CRGB::Black;
+    FastLED.show();
+    delay(30);
+  }
+  strip.mode = 0;
+  strip.enabledLedsCount = 0;
+}
 void encoderTick() {
   enc.tick(); // работаем с энкодером
   if (enc.isClick()) {
     if (mode != STANDBY) {
       mode = STANDBY;
       oneBeep();
+      stripDown();
       return;
     } else {
-      for (int dot = strip.enabledLedsCount; dot >= 0; dot--) {
-        strip.enabledLedsCount--;
-        strip.updateFlag = true;
-        updateStripTick();
-        delay(30);
+      if (strip.enabledLedsCount == 0) {
+        strip.enabledLedsCount++;
+        strip.leds[STRIP_LEDS - 1] = CHSV(HUE_ORANGE, 64, 64);
+        FastLED.show();
+      } else {
+        stripDown();
       }
-      strip.mode = 0;
     }
   }
   if (enc.isRight()) {
