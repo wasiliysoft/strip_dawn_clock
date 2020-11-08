@@ -9,15 +9,14 @@
 // *************************** НАСТРОЙКИ ***************************//
 #define DAWN_TIME 10 // длительность рассвета в мин. до наступления будильника
 
-#define BUZZ 0        // пищать пищалкой (1 вкл, 0 выкл)
 #define BUZZ_BRIGHT 5 // громкость звонка
 #define LED_BRIGHT 100 // яркость светодиода индикатора (0 - 255)
 
 #define ENCODER_TYPE 1 // тип энкодера (0 или 1).
 // *********************** ПАРАМЕТРЫ ЛЕНТЫ ***********************
 
-#define STRIP_BRIGHTNESS 150        // яркость ленты
-#define STRIP_COLOR CRGB::LightCyan // Цвет
+#define STRIP_BRIGHTNESS 150 // яркость ленты
+
 #define STRIP_LEDS 67      // количество светодиодов
 #define STRIP_TYPE WS2812B // тип ленты
 #define COLOR_ORDER GRB    // последовательность цветов
@@ -33,18 +32,9 @@
 
 // ***************** ОБЪЕКТЫ И ПЕРЕМЕННЫЕ *****************
 
-CRGB leds[STRIP_LEDS];
 Encoder enc(CLKe, DTe, SWe, ENCODER_TYPE);
 RTC_DS3231 rtc;
 GTimer_ms timerLED(30);
-GTimer_ms timerStrip(33);
-#if BUZZ == 1
-GTimer_ms timerBUZZ(300);
-#endif
-
-GTimer_ms timerMinute(60000);
-GTimer_ms timerDAWN(DAWN_TIME * 60000 / STRIP_LEDS);
-
 SerialCommand SCmd;
 
 struct {
@@ -54,29 +44,47 @@ struct {
 struct {
   int8_t h, m;
   boolean enabled = true;
-  // boolean buzzer = false;
 } alarm;
 
 struct {
   int8_t h, m;
 } dawn;
+struct {
+  CRGB leds[STRIP_LEDS];
+  int mode = 0;
+  int enabledLedsCount = 0;
+  bool updateFlag = true;
+} strip;
 
 boolean isLostPower = false; // была потеря питания на часах
 
-int endabled_led_count = 0;
 enum Modes { STANDBY, DAWN, ALARM };
 Modes mode = STANDBY;
+void timeTick();
+void dawnTick();
+void indicatorTick();
+void encoderTick();
+void updateStripTick();
 
-int stripMode = 0; // 0-белый 1-радуга 2-оранжевый
+void syncRTCTime();
+
+void settingTime();
+void settingAlarm();
+void calculateDawn();
+void printStatus();
+void oneBeep();
+void twoBeep();
+
 void setup() {
   pinMode(LED_PIN, OUTPUT);
   pinMode(BUZZ_PIN, OUTPUT);
 
   Serial.begin(9600);
   delay(1000);
-  FastLED.addLeds<STRIP_TYPE, STRIP_PIN, COLOR_ORDER>(leds, STRIP_LEDS)
+  FastLED.addLeds<STRIP_TYPE, STRIP_PIN, COLOR_ORDER>(strip.leds, STRIP_LEDS)
       .setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(STRIP_BRIGHTNESS);
+  FastLED.setMaxPowerInVoltsAndMilliamps(5, 900);
   SCmd.addCommand("a", settingAlarm);
   SCmd.addCommand("t", settingTime);
 
@@ -112,40 +120,10 @@ void loop() {
   dawnTick();
   indicatorTick();
   encoderTick();
-  ledStripTick();
+  updateStripTick();
   SCmd.readSerial();
+}
 
-#if BUZZ == 1
-  buzzTick();
-#endif
-}
-void ledStripTick() {
-  if (timerStrip.isReady()) {
-    endabled_led_count = constrain(endabled_led_count, 0, STRIP_LEDS);
-    if (stripMode == 0) { // Default color
-      for (int dot = 0; dot < STRIP_LEDS; dot++) {
-        if (dot < endabled_led_count) {
-          leds[STRIP_LEDS - 1 - dot] = STRIP_COLOR;
-        } else {
-          leds[STRIP_LEDS - 1 - dot] = CRGB::Black;
-        }
-      }
-    } else if (stripMode == 1) { // RainbowColors
-      static uint8_t startIndex = 0;
-      startIndex = startIndex + 1; /* motion speed */
-      FillLEDsFromPaletteColors(startIndex);
-    } else if (stripMode == 2) { // DarkOrange
-      for (int dot = 0; dot < STRIP_LEDS; dot++) {
-        if (dot < endabled_led_count) {
-          leds[STRIP_LEDS - 1 - dot] = CRGB::DarkOrange;
-        } else {
-          leds[STRIP_LEDS - 1 - dot] = CRGB::Black;
-        }
-      }
-    }
-    FastLED.show();
-  }
-}
 void syncRTCTime() {
   clock.h = rtc.now().hour();
   clock.m = rtc.now().minute();
@@ -184,23 +162,8 @@ void settingTime() {
   }
 }
 
-#if BUZZ == 1
-void buzzTick() {
-  if (timerBUZZ.isReady()) {
-    buzzFlag = !buzzFlag;
-    if (alarm_enabled && mode == 2) {
-      if (buzzFlag) {
-        analogWrite(BUZZ_PIN, BUZZ_BRIGHT);
-      } else {
-        digitalWrite(BUZZ_PIN, LOW);
-      }
-    } else {
-      digitalWrite(BUZZ_PIN, LOW);
-    }
-  }
-}
-#endif
 void timeTick() {
+  static GTimer_ms timerMinute(60000);
   if (timerMinute.isReady()) {
     syncRTCTime();
     if (alarm.enabled) {
@@ -223,10 +186,24 @@ void timeTick() {
   }
 }
 void dawnTick() {
+  static GTimer_ms timer((DAWN_TIME * 60000) / (STRIP_LEDS * STRIP_BRIGHTNESS));
+  static uint8_t dot = STRIP_LEDS;
+  static uint8_t dotBridhtnes = 0;
+
   if (alarm.enabled && mode != STANDBY) {
-    if (timerDAWN.isReady()) {
-      endabled_led_count++;
+    if (timer.isReady()) {
+      dotBridhtnes++;
+      if (dotBridhtnes == STRIP_BRIGHTNESS) {
+        dotBridhtnes = 0;
+        dot--;
+        dot = constrain(dot, 0, STRIP_LEDS);
+      }
+      strip.leds[dot] = CHSV(HUE_ORANGE, 200, dotBridhtnes);
+      FastLED.show();
     }
+  } else {
+    dot = STRIP_LEDS;
+    dotBridhtnes = 0;
   }
 }
 
@@ -309,6 +286,56 @@ void calculateDawn() {
   }
 }
 
+void updateStripTick() {
+  if (strip.updateFlag) {
+
+    static CRGB color = CHSV(HUE_ORANGE, 64, 255);
+
+    strip.enabledLedsCount = constrain(strip.enabledLedsCount, 0, STRIP_LEDS);
+    strip.mode = constrain(strip.mode, 0, 2);
+    switch (strip.mode) {
+    case 0:
+      color = CHSV(HUE_ORANGE, 64, 255);
+      break;
+    case 1:
+      static GTimer_ms rainbowTimer(50);
+      static uint8_t startColorIndex = 0;
+      static uint8_t colorIndex = 0;
+      if (rainbowTimer.isReady()) {
+        startColorIndex++;
+        colorIndex = startColorIndex;
+        for (int dot = 0; dot < STRIP_LEDS; dot++) {
+          if (dot < strip.enabledLedsCount) {
+            strip.leds[STRIP_LEDS - 1 - dot] =
+                ColorFromPalette(RainbowColors_p, colorIndex, 255, LINEARBLEND);
+            colorIndex -= 3; // ширина спекра
+          } else {
+            strip.leds[STRIP_LEDS - 1 - dot] = CRGB::Black;
+          }
+        }
+        FastLED.show();
+      }
+      return;
+      break;
+    case 2:
+      color = CHSV(HUE_ORANGE, 255, 255);
+      break;
+    default:
+      break;
+    }
+
+    for (int dot = 0; dot < STRIP_LEDS; dot++) {
+      if (dot < strip.enabledLedsCount) {
+        strip.leds[STRIP_LEDS - 1 - dot] = color;
+      } else {
+        strip.leds[STRIP_LEDS - 1 - dot] = CRGB::Black;
+      }
+    }
+    FastLED.show();
+    strip.updateFlag = false;
+  }
+}
+
 void encoderTick() {
   enc.tick(); // работаем с энкодером
   if (enc.isClick()) {
@@ -316,30 +343,31 @@ void encoderTick() {
       mode = STANDBY;
       oneBeep();
       return;
-    }
-    if (endabled_led_count == 0) {
-      endabled_led_count = 1;
     } else {
-      downStrip();
-      stripMode = 0;
+      for (int dot = strip.enabledLedsCount; dot >= 0; dot--) {
+        strip.enabledLedsCount--;
+        strip.updateFlag = true;
+        updateStripTick();
+        delay(30);
+      }
+      strip.mode = 0;
     }
   }
   if (enc.isRight()) {
-    endabled_led_count = endabled_led_count + 4;
-    endabled_led_count = constrain(endabled_led_count, 0, STRIP_LEDS);
-    Serial.println(endabled_led_count);
+    strip.enabledLedsCount += 4;
+    strip.updateFlag = true;
   }
   if (enc.isLeft()) {
-    endabled_led_count = endabled_led_count - 2;
-    endabled_led_count = constrain(endabled_led_count, 0, STRIP_LEDS);
+    strip.enabledLedsCount -= 4;
+    strip.updateFlag = true;
   }
   if (enc.isLeftH()) {
-    stripMode--;
-    stripMode = constrain(stripMode, 0, 2);
+    strip.mode--;
+    strip.updateFlag = true;
   }
   if (enc.isRightH()) {
-    stripMode++;
-    stripMode = constrain(stripMode, 0, 2);
+    strip.mode++;
+    strip.updateFlag = true;
   }
 
   // *********** УДЕРЖАНИЕ ЭНКОДЕРА **********
@@ -348,27 +376,6 @@ void encoderTick() {
     EEPROM.update(2, alarm.enabled); // сохраняем состояние будильника
     twoBeep();
   }
-}
-void FillLEDsFromPaletteColors(uint8_t colorIndex) {
-  for (int dot = 0; dot < STRIP_LEDS; dot++) {
-    if (dot < endabled_led_count) {
-      leds[STRIP_LEDS - 1 - dot] =
-          ColorFromPalette(RainbowColors_p, colorIndex, 255, LINEARBLEND);
-      colorIndex -= 2;
-    } else {
-      leds[STRIP_LEDS - 1 - dot] = CRGB::Black;
-    }
-  }
-}
-
-void downStrip() {
-  endabled_led_count = constrain(endabled_led_count, 0, STRIP_LEDS);
-  for (int dot = endabled_led_count; dot >= 0; dot--) {
-    leds[STRIP_LEDS - 1 - dot] = CRGB::Black;
-    FastLED.show();
-    delay(30);
-  }
-  endabled_led_count = 0;
 }
 
 void oneBeep() {

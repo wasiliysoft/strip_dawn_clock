@@ -41,9 +41,11 @@
                 "C:/Users/WasiliySoft/.platformio/lib/GyverUART",
                 "C:/Users/WasiliySoft/.platformio/lib/GyverWDT",
                 "C:/Users/WasiliySoft/.platformio/lib/PWMrelay",
+                "C:/Users/WasiliySoft/.platformio/lib/SerialCommand",
                 "C:/Users/WasiliySoft/.platformio/lib/ServoSmooth",
                 "C:/Users/WasiliySoft/.platformio/lib/TM1637_Gyver_old",
                 "C:/Users/WasiliySoft/.platformio/lib/TM74HC595_Gyver",
+                "C:/Users/WasiliySoft/.platformio/lib/TinyWireM",
                 "C:/Users/WasiliySoft/.platformio/lib/buildTime",
                 "C:/Users/WasiliySoft/.platformio/lib/directADC",
                 "C:/Users/WasiliySoft/.platformio/lib/directTimers",
@@ -95,9 +97,11 @@
                     "C:/Users/WasiliySoft/.platformio/lib/GyverUART",
                     "C:/Users/WasiliySoft/.platformio/lib/GyverWDT",
                     "C:/Users/WasiliySoft/.platformio/lib/PWMrelay",
+                    "C:/Users/WasiliySoft/.platformio/lib/SerialCommand",
                     "C:/Users/WasiliySoft/.platformio/lib/ServoSmooth",
                     "C:/Users/WasiliySoft/.platformio/lib/TM1637_Gyver_old",
                     "C:/Users/WasiliySoft/.platformio/lib/TM74HC595_Gyver",
+                    "C:/Users/WasiliySoft/.platformio/lib/TinyWireM",
                     "C:/Users/WasiliySoft/.platformio/lib/buildTime",
                     "C:/Users/WasiliySoft/.platformio/lib/directADC",
                     "C:/Users/WasiliySoft/.platformio/lib/directTimers",
@@ -113,12 +117,12 @@
                 ]
             },
             "defines": [
-                "PLATFORMIO=50001",
+                "PLATFORMIO=50002",
                 "ARDUINO_AVR_NANO",
                 "F_CPU=16000000L",
                 "ARDUINO_ARCH_AVR",
                 "ARDUINO=10808",
-                "__AVR_ATmega168__",
+                "__AVR_ATmega328P__",
                 ""
             ],
             "intelliSenseMode": "clang-x64",
@@ -126,7 +130,7 @@
             "cppStandard": "c++11",
             "compilerPath": "C:/Users/WasiliySoft/.platformio/packages/toolchain-atmelavr/bin/avr-gcc.exe",
             "compilerArgs": [
-                "-mmcu=atmega168",
+                "-mmcu=atmega328p",
                 ""
             ]
         }
