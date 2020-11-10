@@ -7,12 +7,11 @@
 #include <CyberLib.h>
 #include <SerialCommand.h>
 // *************************** НАСТРОЙКИ ***************************//
-#define DAWN_TIME 10 // длительность рассвета в мин. до наступления будильника
-
-#define BUZZ_BRIGHT 5 // громкость звонка
+#define DAWN_TIME 20 // длительность рассвета в мин. до наступления будильника
+#define BUZZ_ALARM 1 // звуковой будильник
 #define LED_BRIGHT 100 // яркость светодиода индикатора (0 - 255)
+#define BUZZ_BRIGHT 5 // громкость сигналов
 
-#define ENCODER_TYPE 1 // тип энкодера (0 или 1).
 // *********************** ПАРАМЕТРЫ ЛЕНТЫ ***********************
 
 #define STRIP_BRIGHTNESS 150 // яркость ленты
@@ -22,9 +21,10 @@
 #define COLOR_ORDER GRB    // последовательность цветов
 
 // ************ ПИНЫ ************
-#define CLKe 8 // энкодер
-#define DTe 9  // энкодер
-#define SWe 10 // энкодер
+#define ENCODER_TYPE 1 // тип энкодера (0 или 1).
+#define CLKe 8         // энкодер
+#define DTe 9          // энкодер
+#define SWe 10         // энкодер
 
 #define STRIP_PIN 4 // Пин ленты
 #define BUZZ_PIN 5  // Пин пищалки
@@ -62,6 +62,7 @@ enum Modes { STANDBY, DAWN, ALARM };
 Modes mode = STANDBY;
 void timeTick();
 void dawnTick();
+void alarmTick();
 void indicatorTick();
 void encoderTick();
 void updateStripTick();
@@ -118,6 +119,7 @@ void setup() {
 void loop() {
   timeTick();
   dawnTick();
+  alarmTick();
   indicatorTick();
   encoderTick();
   updateStripTick();
@@ -186,26 +188,76 @@ void timeTick() {
   }
 }
 void dawnTick() {
-  static GTimer_ms timer((DAWN_TIME * 60000) / (STRIP_LEDS * STRIP_BRIGHTNESS));
+  static GTimer_ms timer((DAWN_TIME * 60000) / (STRIP_LEDS * 255));
   static uint8_t dotBridhtnes = 0;
   if (alarm.enabled && mode != STANDBY) {
     if (timer.isReady()) {
       dotBridhtnes++;
-      if (dotBridhtnes == STRIP_BRIGHTNESS) {
+      if (dotBridhtnes == 255) {
         dotBridhtnes = 0;
         strip.enabledLedsCount++;
         strip.enabledLedsCount =
             constrain(strip.enabledLedsCount, 0, STRIP_LEDS);
       }
       strip.leds[STRIP_LEDS - 1 - strip.enabledLedsCount] =
-          CHSV(HUE_ORANGE, 200, dotBridhtnes);
+          CHSV(HUE_ORANGE, 64, dotBridhtnes);
       FastLED.show();
     }
   } else {
     dotBridhtnes = 0;
   }
 }
+void alarmTick() {
+  if (BUZZ_ALARM == 0)
+    return;
+  static GTimer_ms timer(10);
+  static uint8_t tickCounter = 0;
+  static uint8_t volumeCounter = 0;
+  static uint8_t volume = 1;
 
+  if (alarm.enabled && mode == ALARM) {
+    if (timer.isReady()) {
+      tickCounter++;
+      if (tickCounter == 1) {
+        analogWrite(BUZZ_PIN, volume);
+      }
+      if (tickCounter == 11) {
+        digitalWrite(BUZZ_PIN, LOW);
+      }
+      if (tickCounter == 16) {
+        analogWrite(BUZZ_PIN, volume);
+      }
+      if (tickCounter == 26) {
+        digitalWrite(BUZZ_PIN, LOW);
+      }
+      if (tickCounter == 31) {
+        analogWrite(BUZZ_PIN, volume);
+      }
+      if (tickCounter == 41) {
+        digitalWrite(BUZZ_PIN, LOW);
+      }
+      if (tickCounter == 46) {
+        analogWrite(BUZZ_PIN, volume);
+      }
+      if (tickCounter == 56) {
+        digitalWrite(BUZZ_PIN, LOW);
+      }
+      if (tickCounter == 255) {
+        volumeCounter++;
+        tickCounter = 0;
+      }
+      if (volumeCounter == 3) {
+        volumeCounter = 0;
+        volume++;
+        volume = constrain(volume, 1, 10);
+      }
+    }
+  } else {
+    tickCounter = 0;
+    volumeCounter = 0;
+    volume = 1;
+  }
+}
 void indicatorTick() {
 
   if (timerLED.isReady()) {
@@ -344,37 +396,49 @@ void stripDown() {
   strip.mode = 0;
   strip.enabledLedsCount = 0;
 }
+bool isNotStandbyModeToDown() {
+  if (mode != STANDBY) {
+    mode = STANDBY;
+    oneBeep();
+    stripDown();
+    return true;
+  }
+  return false;
+}
 void encoderTick() {
   enc.tick(); // работаем с энкодером
   if (enc.isClick()) {
-    if (mode != STANDBY) {
-      mode = STANDBY;
-      oneBeep();
-      stripDown();
+    if (isNotStandbyModeToDown())
       return;
-    } else {
-      if (strip.enabledLedsCount == 0) {
-        strip.enabledLedsCount++;
-        strip.leds[STRIP_LEDS - 1] = CHSV(HUE_ORANGE, 64, 64);
-        FastLED.show();
-      } else {
-        stripDown();
-      }
+    if (strip.enabledLedsCount == 0) {
+      strip.enabledLedsCount++;
+      strip.leds[STRIP_LEDS - 1] = CHSV(HUE_ORANGE, 64, 64);
+      FastLED.show();
+      return;
     }
+    stripDown();
   }
   if (enc.isRight()) {
+    if (isNotStandbyModeToDown())
+      return;
     strip.enabledLedsCount += 4;
     strip.updateFlag = true;
   }
   if (enc.isLeft()) {
+    if (isNotStandbyModeToDown())
+      return;
     strip.enabledLedsCount -= 4;
     strip.updateFlag = true;
   }
   if (enc.isLeftH()) {
+    if (isNotStandbyModeToDown())
+      return;
     strip.mode--;
     strip.updateFlag = true;
   }
   if (enc.isRightH()) {
+    if (isNotStandbyModeToDown())
+      return;
     strip.mode++;
     strip.updateFlag = true;
   }
