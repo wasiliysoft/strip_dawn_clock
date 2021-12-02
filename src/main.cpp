@@ -200,7 +200,7 @@ void dawnTick() {
             constrain(strip.enabledLedsCount, 0, STRIP_LEDS);
       }
       strip.leds[STRIP_LEDS - 1 - strip.enabledLedsCount] =
-          CHSV(HUE_ORANGE, 64, dotBridhtnes);
+          CHSV(HUE_ORANGE, 255, dotBridhtnes);
       FastLED.show();
     }
   } else {
@@ -340,13 +340,13 @@ void calculateDawn() {
 void updateStripTick() {
   if (strip.updateFlag) {
 
-    static CRGB color = CHSV(HUE_ORANGE, 64, 255);
+    static CRGB color = CHSV(HUE_ORANGE, 255, 255);
 
     strip.enabledLedsCount = constrain(strip.enabledLedsCount, 0, STRIP_LEDS);
     strip.mode = constrain(strip.mode, 0, 2);
     switch (strip.mode) {
     case 0:
-      color = CHSV(HUE_ORANGE, 64, 255);
+      color = CHSV(HUE_ORANGE, 255, 255);
       break;
     case 1:
       static GTimer_ms rainbowTimer(50);
@@ -369,7 +369,7 @@ void updateStripTick() {
       return;
       break;
     case 2:
-      color = CHSV(HUE_ORANGE, 255, 255);
+      color = CHSV(HUE_ORANGE, 64, 255);
       break;
     default:
       break;
