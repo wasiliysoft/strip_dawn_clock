@@ -1,0 +1,38 @@
+{
+    // See http://go.microsoft.com/fwlink/?LinkId=827846
+    // for the documentation about the extensions.json format
+    "recommendations": [
+        "llvm-vs-code-extensions.vscode-clangd",
+        "DarrenLevine.auto-debug"
+    ],
+    "unwantedRecommendations": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cpptools-extension-pack",
+        "ms-vscode.cpptools-themes",
+        "ms-vscode.cmake-tools",
+        "oracle.oracle-java",
+        "redhat.java",
+        "vscjava.vscode-gradle",
+        "vscjava.vscode-java-dependency",
+        "vscjava.vscode-java-pack",
+        "vscjava.vscode-java-test",
+        "vscjava.vscode-maven"
+    ],
+    // Custom installation instructions for local extensions
+    "instructions": {
+        "DarrenLevine.auto-debug": {
+            "displayName": "Auto Debug",
+            "description": "Automatically switches debug configurations based on active file",
+            "localInstall": {
+                "path": ".vscode/DarrenLevine.auto-debug-1.0.2.vsix",
+                "instructions": [
+                    "This extension is installed locally from a .vsix file",
+                    "Run './install' script to auto-install, or install manually:",
+                    "1. Open Extensions (Ctrl+Shift+X)",
+                    "2. Click ... menu → Install from VSIX",
+                    "3. Select: .vscode/DarrenLevine.auto-debug-1.0.2.vsix"
+                ]
+            }
+        }
+    }
+}

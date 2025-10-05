@@ -1,0 +1,386 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "Build FastLED Tests",
+            "command": "bash",
+            "args": [
+                "test",
+                "--quick",
+                "--cpp"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Build FastLED tests using the project's build system with Clang",
+            "dependsOn": "Copy Compile Commands"
+        },
+        {
+            "type": "shell",
+            "label": "Build FastLED Tests (Full)",
+            "command": "bash",
+            "args": [
+                "test"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Build FastLED tests with full test suite (includes Python tests)",
+            "dependsOn": "Copy Compile Commands"
+        },
+        {
+            "type": "shell",
+            "label": "Build Single Test",
+            "command": "bash",
+            "args": [
+                "test",
+                "${input:testName}"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Build and run a specific FastLED test",
+            "dependsOn": "Copy Compile Commands"
+        },
+        {
+            "type": "shell",
+            "label": "Build Current Test File",
+            "command": "bash",
+            "args": [
+                "test",
+                "--cpp",
+                "${fileBasenameNoExtension}"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Build the test file currently open in the editor",
+            "dependsOn": "Copy Compile Commands"
+        },
+        {
+            "type": "shell",
+            "label": "Compile Current Test File (Debug Only)",
+            "command": "uv",
+            "args": [
+                "run",
+                "ci/cpp_test_run.py",
+                "--compile-only",
+                "--clang",
+                "--test",
+                "${fileBasenameNoExtension}"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Compile (but don't run) the test file for debugging",
+            "dependsOn": "Copy Compile Commands"
+        },
+        {
+            "type": "shell",
+            "label": "Copy Compile Commands",
+            "command": "cp",
+            "args": [
+                "tests/.build/compile_commands.json",
+                "compile_commands.json"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": false,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": false
+            },
+            "detail": "Copy compile_commands.json to project root for clangd"
+        },
+        {
+            "type": "shell",
+            "label": "Clean Build",
+            "command": "rm",
+            "args": [
+                "-rf",
+                "tests/.build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "Clean all build artifacts"
+        },
+        {
+            "type": "shell",
+            "label": "Run FastLED Linting",
+            "command": "bash",
+            "args": [
+                "lint"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Run FastLED code linting and formatting"
+        },
+        {
+            "type": "shell",
+            "label": "Check Debug Symbols",
+            "command": "file",
+            "args": [
+                "${workspaceFolder}/tests/.build/bin/${input:testNameFull}"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "Check if debug symbols are present in test executable"
+        },
+        {
+            "type": "shell",
+            "label": "Verify GDB Setup",
+            "command": "gdb",
+            "args": [
+                "--version"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "Verify GDB debugger is available and working"
+        },
+        {
+            "type": "shell",
+            "label": "Run FastLED Web Compiler",
+            "command": "uv",
+            "args": [
+                "run",
+                "fastled",
+                "${file}",
+                "--no-auto-updates"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "new",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "detail": "Run FastLED web compiler on the current .ino file",
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "Run Current .ino File with FastLED",
+            "command": "uv",
+            "args": [
+                "run",
+                "fastled",
+                "${file}",
+                "--no-auto-updates"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "new",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "detail": "Run the current .ino file with FastLED web compiler (alias for convenience)",
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "Run FastLED (Debug)",
+            "command": "uv",
+            "args": [
+                "run",
+                "fastled",
+                "${file}",
+                "--debug",
+                "--app"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "new",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "detail": "Run FastLED with debug mode and app visualization (always includes --app flag)",
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "Run FastLED (Quick)",
+            "command": "uv",
+            "args": [
+                "run",
+                "fastled",
+                "${file}",
+                "--background-update"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "new",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "detail": "Run FastLED with quick background update mode",
+            "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id": "testName",
+            "description": "Enter test name to build/run (with or without test_ prefix)",
+            "type": "promptString",
+            "default": "allocator"
+        },
+        {
+            "id": "testNameOnly",
+            "description": "Enter test name (without test_ prefix)",
+            "type": "promptString",
+            "default": "allocator"
+        },
+        {
+            "id": "testNameFull",
+            "description": "Enter full test executable name (e.g., test_allocator.exe)",
+            "type": "promptString",
+            "default": "test_allocator.exe"
+        }
+    ]
+}
