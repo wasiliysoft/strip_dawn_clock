@@ -5,13 +5,33 @@
 #include "LEDStrip.h"
 #include <ArduinoJson.h>
 #include <ESP8266WebServer.h>
-
-ESP8266WebServer server(80);
 extern AlarmClock alarmClock;
 extern LEDStrip ledStrip;
 
-void handleRoot() {
-  String html = R"=====(
+class WebUI {
+private:
+  ESP8266WebServer server;
+
+public:
+  WebUI() : server(80) {}
+  void begin() {
+    server.on("/", [this]() { this->handleRoot(); });
+    server.on("/status", [this]() { this->handleStatus(); });
+    server.on("/setAlarm", [this]() { this->handleSetAlarm(); });
+    server.on("/toggleAlarm", [this]() { this->handleToggleAlarm(); });
+    server.on("/lightOn", [this]() { this->handleLightOn(); });
+    server.on("/lightOff", [this]() { this->handleLightOff(); });
+    server.on("/lightIncreaseLeds",[this]() { this->handleLightIncreaseLeds(); });
+    server.on("/lightDencreaseLeds",[this]() { this->handleLightDecreaseLeds(); });
+    server.begin();
+    Serial.println("HTTP server started");
+  }
+
+  void update() { server.handleClient(); }
+
+private:
+  void handleRoot() {
+    String html = R"=====(
 <!DOCTYPE html>
 <html>
 <head>
@@ -104,78 +124,64 @@ void handleRoot() {
 </body>
 </html>
 )=====";
-  server.send(200, "text/html", html);
-}
-
-void handleStatus() {
-  JsonDocument doc;
-
-  doc["time"] = alarmClock.getTimeString();
-  doc["alarm"] = alarmClock.getAlarmString();
-  doc["dawn"] = alarmClock.getDawnString();
-  doc["alarmEnabled"] = alarmClock.isAlarmEnabled();
-  doc["wifi"] = WiFi.SSID();
-
-  String response;
-  serializeJson(doc, response);
-  server.send(200, "application/json", response);
-}
-
-void handleSetAlarm() {
-  if (server.hasArg("h") && server.hasArg("m")) {
-    int hours = server.arg("h").toInt();
-    int minutes = server.arg("m").toInt();
-
-    // Валидация ввода
-    if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
-      alarmClock.setAlarm(hours, minutes);
-      server.send(200, "text/plain", "Alarm set successfully");
-    } else {
-      server.send(400, "text/plain", "Invalid time format");
-    }
-  } else {
-    server.send(400, "text/plain", "Missing parameters");
+    server.send(200, "text/html", html);
   }
-}
 
-void handleToggleAlarm() {
-  alarmClock.toggleAlarm();
-  server.send(200, "text/plain", "OK");
-}
+  void handleStatus() {
+    JsonDocument doc;
 
-void handleLightOn() {
-  ledStrip.turnOn();
-  server.send(200, "text/plain", "Light ON");
-}
+    doc["time"] = alarmClock.getTimeString();
+    doc["alarm"] = alarmClock.getAlarmString();
+    doc["dawn"] = alarmClock.getDawnString();
+    doc["alarmEnabled"] = alarmClock.isAlarmEnabled();
+    doc["wifi"] = WiFi.SSID();
 
-void handleLightOff() {
-  ledStrip.turnOff();
-  server.send(200, "text/plain", "Light OFF");
-}
-void handleLightIncreaseLeds() {
-  ledStrip.increaseBrightness();
-  server.send(200, "text/plain", "ok");
-}
+    String response;
+    serializeJson(doc, response);
+    server.send(200, "application/json", response);
+  }
 
-void handleLightDencreaseLeds() {
-  ledStrip.decreaseBrightness();
-  server.send(200, "text/plain", "ok");
-}
+  void handleSetAlarm() {
+    if (server.hasArg("h") && server.hasArg("m")) {
+      int hours = server.arg("h").toInt();
+      int minutes = server.arg("m").toInt();
 
-void setupWebServer() {
-  server.on("/", handleRoot);
-  server.on("/status", handleStatus);
-  server.on("/setAlarm", handleSetAlarm);
-  server.on("/toggleAlarm", handleToggleAlarm);
-  server.on("/lightOn", handleLightOn);
-  server.on("/lightOff", handleLightOff);
-  server.on("/lightIncreaseLeds", handleLightIncreaseLeds);
-  server.on("/lightDencreaseLeds", handleLightDencreaseLeds);
+      // Валидация ввода
+      if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+        alarmClock.setAlarm(hours, minutes);
+        server.send(200, "text/plain", "Alarm set successfully");
+      } else {
+        server.send(400, "text/plain", "Invalid time format");
+      }
+    } else {
+      server.send(400, "text/plain", "Missing parameters");
+    }
+  }
 
-  server.begin();
-  Serial.println("HTTP server started");
-}
+  void handleToggleAlarm() {
+    alarmClock.toggleAlarm();
+    server.send(200, "text/plain", "OK");
+  }
 
-void handleWebClient() { server.handleClient(); }
+  void handleLightOn() {
+    ledStrip.turnOn();
+    server.send(200, "text/plain", "Light ON");
+  }
+
+  void handleLightOff() {
+    ledStrip.turnOff();
+    server.send(200, "text/plain", "Light OFF");
+  }
+  
+  void handleLightIncreaseLeds() {
+    ledStrip.increaseBrightness();
+    server.send(200, "text/plain", "ok");
+  }
+
+  void handleLightDecreaseLeds() {
+    ledStrip.decreaseBrightness();
+    server.send(200, "text/plain", "ok");
+  }
+};
 
 #endif
