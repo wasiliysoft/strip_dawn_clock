@@ -7,14 +7,10 @@
 #ifndef LED_STRIP_H
 #include "LEDStrip.h"
 #endif
-#ifndef BEEPER_H
-#include "Beeper.h"
-#endif
 #ifndef ALARM_CLOCK_H
 #include "AlarmClock.h"
 #endif
 
-extern Beeper beeper;
 extern AlarmClock alarmClock;
 extern LEDStrip ledStrip;
 
@@ -35,7 +31,6 @@ public:
     if (enc.click()) {
       if (alarmClock.isAlarmTriggered() || alarmClock.isDawnTiggered()) {
         alarmClock.cancelAlam();
-        beeper.startSingle();
       } else {
         ledStrip.startFadeOut();
       }
@@ -66,7 +61,6 @@ public:
 
     if (enc.hold()) {
       alarmClock.toggleAlarm();
-      beeper.startPulse(1);
       return;
     }
   }

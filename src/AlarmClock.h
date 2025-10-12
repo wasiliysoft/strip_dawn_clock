@@ -3,9 +3,13 @@
 #ifndef CONFIG_H
 #include "Config.h"
 #endif
+#ifndef BEEPER_H
+#include "Beeper.h"
+#endif
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 extern Config config;
+extern Beeper beeper;
 
 class AlarmClock {
 private:
@@ -68,12 +72,14 @@ public:
   void toggleAlarm() {
     config.alarm.enabled = !config.alarm.enabled;
     config.commit();
+    beeper.startPulse(config.alarm.enabled ? 2 : 1, 50U, 100U);
   }
 
   // Сбросить триггеры будильник, рассвет
   void cancelAlam() {
     alarmTriggered = false;
     dawnTriggered = false;
+    beeper.stop();
   }
 
   String getTimeString() { return timeClient.getFormattedTime(); }
