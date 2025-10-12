@@ -36,27 +36,6 @@ public:
     }
   }
 
-  void tick() {
-    timeClient.update();
-    uint8_t currentHour = timeClient.getHours();
-    uint8_t currentMinute = timeClient.getMinutes();
-
-    if (config.alarm.enabled) {
-      // Проверка начала рассвета
-      if (currentHour == config.dawn.hours &&
-          currentMinute == config.dawn.minutes) {
-        dawnTriggered = true;
-        Serial.println("Dawn started");
-      }
-      // Проверка будильника
-      if (currentHour == config.alarm.hours &&
-          currentMinute == config.alarm.minutes) {
-        alarmTriggered = true;
-        Serial.println("Alarm!");
-      }
-    }
-  }
-
   void setAlarm(uint8_t h, uint8_t m) {
     config.alarm.hours = h;
     config.alarm.minutes = m;
@@ -67,6 +46,7 @@ public:
   void setEnabled(bool enabled) {
     config.alarm.enabled = enabled;
     config.commit();
+    beeper.startPulse(config.alarm.enabled ? 2 : 1, 50U, 100U);
   }
 
   void toggleAlarm() {
@@ -105,6 +85,26 @@ public:
   bool isAlarmEnabled() const { return config.alarm.enabled; }
 
 private:
+  void tick() {
+    timeClient.update();
+    uint8_t currentHour = timeClient.getHours();
+    uint8_t currentMinute = timeClient.getMinutes();
+
+    if (config.alarm.enabled) {
+      // Проверка начала рассвета
+      if (currentHour == config.dawn.hours &&
+          currentMinute == config.dawn.minutes) {
+        dawnTriggered = true;
+        Serial.println("Dawn started");
+      }
+      // Проверка будильника
+      if (currentHour == config.alarm.hours &&
+          currentMinute == config.alarm.minutes) {
+        alarmTriggered = true;
+        Serial.println("Alarm!");
+      }
+    }
+  }
   void calculateDawnTime() {
     if (config.alarm.minutes >= DAWN_DURATION) {
       config.dawn.hours = config.alarm.hours;

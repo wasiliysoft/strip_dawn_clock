@@ -39,6 +39,5 @@ void loop() {
   beeper.handle();
   digitalWrite(STATUS_LED_PIN, alarmClock.isAlarmEnabled() ? LOW : HIGH);
   // Быстрая обработка
-  yield();
   delay(1);
 }
