@@ -12,6 +12,11 @@ private:
 
   uint8_t hueOffset = 0;
 
+  // Поля для неблокирующего затухания
+  bool isFading = false;
+  unsigned long fadeStart = 0;
+  uint32_t fadeDuration = 1000; // милисекунд
+
 public:
   void begin() {
     FastLED.addLeds<WS2812B, STRIP_PIN, GRB>(leds, LED_COUNT);
@@ -21,6 +26,23 @@ public:
   }
 
   void update() {
+    // Если идёт затухание — вычисляем и устанавливаем текущую яркость
+    if (isFading) {
+      unsigned long elapsed = millis() - fadeStart;
+      if (elapsed >= fadeDuration) {
+        // завершение затухания: выключаем ленту и сбрасываем флаг
+        setEnabledCount(0);
+        currentMode = 0;
+        isFading = false;
+        FastLED.setBrightness(LED_BRIGHTNESS);
+        render();
+        yield();
+        return;
+      }
+      // компактный расчёт текущей яркости (линеарно от LED_BRIGHTNESS до 0)
+      FastLED.setBrightness((uint8_t)((uint32_t)LED_BRIGHTNESS * (fadeDuration - elapsed) / fadeDuration));
+    }
+
     render();
 
     // Авто-обновление для анимаций
@@ -70,6 +92,15 @@ public:
   // Методы доступа
   uint8_t getEnabledCount() const { return enabledCount; }
   uint8_t getMode() const { return currentMode; }
+
+  // Неблокирующий метод для плавного затухания ленты
+  void startFadeOut(uint32_t durationMs = 1000) {
+    if (!isFading && enabledCount > 0) {
+      isFading = true;
+      fadeStart = millis();
+      fadeDuration = durationMs;
+    }
+  }
 
 private:
   void render() {

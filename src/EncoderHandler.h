@@ -28,7 +28,7 @@ public:
         alarmClock.cancelAlam();
         beep(1);
       } else {
-        ledStrip.turnOff();
+        ledStrip.startFadeOut();
       }
       return;
     }
