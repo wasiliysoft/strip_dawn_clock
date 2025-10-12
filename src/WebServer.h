@@ -21,8 +21,12 @@ public:
     server.on("/toggleAlarm", [this]() { this->handleToggleAlarm(); });
     server.on("/lightOn", [this]() { this->handleLightOn(); });
     server.on("/lightOff", [this]() { this->handleLightOff(); });
-    server.on("/lightIncreaseLeds",[this]() { this->handleLightIncreaseLeds(); });
-    server.on("/lightDencreaseLeds",[this]() { this->handleLightDecreaseLeds(); });
+    server.on("/lightIncreaseLeds",
+              [this]() { this->handleLightIncreaseLeds(); });
+    server.on("/lightDencreaseLeds",
+              [this]() { this->handleLightDecreaseLeds(); });
+    server.on("/beeperRamp", [this]() { this->handleBeeperRamp(); });
+    server.on("/beeperStop", [this]() { this->handleStopBeeper(); });
     server.begin();
     Serial.println("HTTP server started");
   }
@@ -30,6 +34,15 @@ public:
   void update() { server.handleClient(); }
 
 private:
+  void handleStopBeeper() {
+    beeper.stop();
+    server.send(200, "text/plain", "Beeper stopped");
+  }
+  void handleBeeperRamp() {
+    uint16_t patt[] = {50, 100, 50, 100, 50, 100, 50, 500};
+    beeper.startPattern(patt, 8, 3, BUZZER_VOLUME);
+    server.send(200, "text/plain", "Beeper ramp started");
+  }
   void handleRoot() {
     String html = R"=====(
 <!DOCTYPE html>
@@ -70,6 +83,8 @@ private:
             <button onclick="lightOff()">Light Off</button>
             <button onclick="lightIncreaseLeds()">Increase Leds</button>
             <button onclick="lightDencreaseLeds()">Dencrease Leds</button>
+            <button onclick="beeperRamp()">Beeper Ramp</button>
+            <button onclick="beeperStop()">Beeper Stop</button>
         </div>
     </div>
 
@@ -116,7 +131,12 @@ private:
         function lightDencreaseLeds() { 
             fetch('/lightDencreaseLeds').then(() => console.log('Light dencrease leds')); 
         }
-
+        function beeperRamp() { 
+            fetch('/beeperRamp').then(() => console.log('Beeper ramp started')); 
+        }
+        function beeperStop() { 
+            fetch('/beeperStop').then(() => console.log('Beeper stopped')); 
+        }
         // Auto-update status every 5 seconds
         setInterval(updateStatus, 5000);
         updateStatus();
@@ -172,7 +192,7 @@ private:
     ledStrip.turnOff();
     server.send(200, "text/plain", "Light OFF");
   }
-  
+
   void handleLightIncreaseLeds() {
     ledStrip.increaseBrightness();
     server.send(200, "text/plain", "ok");

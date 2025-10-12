@@ -7,9 +7,7 @@ class Beeper {
 public:
   Beeper()
       : _pin(255), _maxVolume(255), _seqCount(0), _seqPlayed(0), _seqToneMs(0),
-        _seqPauseMs(0), _seqVolume(0), _seqOn(false), _seqLastMs(0),
-        _rampActive(false), _rampStartMs(0), _rampDurationMs(0),
-        _rampMaxVolume(0) {}
+        _seqPauseMs(0), _seqVolume(0), _seqOn(false), _seqLastMs(0) {}
 
   // Инициализация пина
   void begin(uint8_t pin = BUZZER_PIN, uint16_t maxVolume = 255) {
@@ -43,7 +41,7 @@ public:
             _seqLastMs = 0;
             // оставляем pin в выключенном состоянии; if ramp active, it will
             // set level below
-            analogWrite(_pin, _rampActive ? currentRampVolume(now) : 0);
+            analogWrite(_pin, 0);
           } else {
             // включаем следующий тон
             analogWrite(_pin, constrain(_seqVolume, 0, _maxVolume));
@@ -55,13 +53,6 @@ public:
       // если последовательность активна — не трогаем ramp дальше
       // (последовательность управляет pin)
       return;
-    }
-
-    // Обработка нарастающего сигнала (ramp)
-    if (_rampActive) {
-      uint16_t vol = currentRampVolume(now);
-      analogWrite(_pin, vol);
-      // ramp остаётся активным, даже после достижения max — тон держится на max
     }
   }
 
@@ -80,32 +71,15 @@ public:
     analogWrite(_pin, _seqVolume);
   }
 
-  // Одиночный гудок (неблокирующий)
-  void startSingle(uint16_t toneMs = 150, uint16_t volume = BUZZER_VOLUME) {
-    startPulse(1, toneMs, toneMs + 10, volume);
-  }
-
-  // Запустить нарастающий сигнал (неблокирующий).
-  // durationMs - время для достижения maxVolume; после достижения signal
-  // держится на maxVolume. maxVolume - целевая амплитуда.
-  void startRamp(int durationMs = 20000, uint16_t maxVolume = BUZZER_VOLUME) {
-    _rampActive = true;
-    _rampStartMs = millis();
-    _rampDurationMs = max(1, durationMs);
-    _rampMaxVolume = constrain(maxVolume, 0, _maxVolume);
-  }
-
+  void startPattern(uint16_t *pattern, int count = 3,int repeats = 1,
+                    uint16_t volume = BUZZER_VOLUME) {}
   // Остановить все звуки
   void stop() {
     _seqCount = 0;
     _seqPlayed = 0;
     _seqOn = false;
-    _rampActive = false;
     analogWrite(_pin, 0);
   }
-
-  // Возвращает true, если в данный момент воспроизводится какой-либо сигнал
-  bool isActive() const { return (_seqCount > 0) || _rampActive; }
 
 private:
   uint8_t _pin;
@@ -119,25 +93,6 @@ private:
   uint16_t _seqVolume;
   bool _seqOn;
   uint32_t _seqLastMs;
-
-  // ramp
-  bool _rampActive;
-  uint32_t _rampStartMs;
-  uint32_t _rampDurationMs;
-  uint16_t _rampMaxVolume;
-
-  // helper: текущая вычисленная громкость для ramp по времени
-  uint16_t currentRampVolume(unsigned long now) const {
-    if (!_rampActive)
-      return 0;
-    unsigned long elapsed = now - _rampStartMs;
-    if (elapsed >= _rampDurationMs)
-      return _rampMaxVolume;
-    // линейное нарастание
-    uint32_t vol = (uint32_t)_rampMaxVolume * (uint32_t)elapsed /
-                   (uint32_t)_rampDurationMs;
-    return (uint16_t)vol;
-  }
 };
 
 #endif // BEEPER_H
