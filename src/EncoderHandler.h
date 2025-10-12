@@ -38,24 +38,22 @@ public:
     }
 
     if (enc.right()) {
-      ledStrip.increaseBrightness();
+      ledStrip.increaseEnableLeds(enc.fast() ? 4 : 1);
       return;
     }
 
     if (enc.left()) {
-      ledStrip.decreaseBrightness();
+      ledStrip.decreaseEnableLeds(enc.fast() ? 4 : 1);
       return;
     }
 
     if (enc.rightH()) {
-      ledStrip.setMode(ledStrip.getMode() + 1);
+      ledStrip.nextMode();
       return;
     }
 
     if (enc.leftH()) {
-      // Безопасное уменьшение (чтобы не уйти в отрицательные)
-      uint8_t currentMode = ledStrip.getMode();
-      ledStrip.setMode(currentMode == 0 ? 2 : currentMode - 1);
+      ledStrip.prevMode();
       return;
     }
 

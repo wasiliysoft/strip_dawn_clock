@@ -21,10 +21,6 @@ public:
     server.on("/toggleAlarm", [this]() { this->handleToggleAlarm(); });
     server.on("/lightOn", [this]() { this->handleLightOn(); });
     server.on("/lightOff", [this]() { this->handleLightOff(); });
-    server.on("/lightIncreaseLeds",
-              [this]() { this->handleLightIncreaseLeds(); });
-    server.on("/lightDencreaseLeds",
-              [this]() { this->handleLightDecreaseLeds(); });
     server.on("/beeperRamp", [this]() { this->handleBeeperRamp(); });
     server.on("/beeperStop", [this]() { this->handleStopBeeper(); });
     server.begin();
@@ -81,8 +77,6 @@ private:
             <button onclick="toggleAlarm()">Toggle Alarm</button>
             <button onclick="lightOn()">Light On</button>
             <button onclick="lightOff()">Light Off</button>
-            <button onclick="lightIncreaseLeds()">Increase Leds</button>
-            <button onclick="lightDencreaseLeds()">Dencrease Leds</button>
             <button onclick="beeperRamp()">Beeper Ramp</button>
             <button onclick="beeperStop()">Beeper Stop</button>
         </div>
@@ -125,12 +119,6 @@ private:
             fetch('/lightOff').then(() => console.log('Light turned off')); 
         }
 
-        function lightIncreaseLeds() { 
-            fetch('/lightIncreaseLeds').then(() => console.log('Light increase leds')); 
-        }
-        function lightDencreaseLeds() { 
-            fetch('/lightDencreaseLeds').then(() => console.log('Light dencrease leds')); 
-        }
         function beeperRamp() { 
             fetch('/beeperRamp').then(() => console.log('Beeper ramp started')); 
         }
@@ -189,18 +177,8 @@ private:
   }
 
   void handleLightOff() {
-    ledStrip.turnOff();
+    ledStrip.startFadeOut();
     server.send(200, "text/plain", "Light OFF");
-  }
-
-  void handleLightIncreaseLeds() {
-    ledStrip.increaseBrightness();
-    server.send(200, "text/plain", "ok");
-  }
-
-  void handleLightDecreaseLeds() {
-    ledStrip.decreaseBrightness();
-    server.send(200, "text/plain", "ok");
   }
 };
 

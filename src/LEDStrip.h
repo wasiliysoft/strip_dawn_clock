@@ -10,8 +10,6 @@ private:
   uint8_t enabledCount = 0;
   uint8_t currentMode = 0;
 
-  uint8_t hueOffset = 0;
-
   // Поля для неблокирующего затухания
   bool isFading = false;
   unsigned long fadeStart = 0;
@@ -40,58 +38,25 @@ public:
         return;
       }
       // компактный расчёт текущей яркости (линеарно от LED_BRIGHTNESS до 0)
-      FastLED.setBrightness((uint8_t)((uint32_t)LED_BRIGHTNESS * (fadeDuration - elapsed) / fadeDuration));
+      FastLED.setBrightness((uint8_t)((uint32_t)LED_BRIGHTNESS *
+                                      (fadeDuration - elapsed) / fadeDuration));
     }
 
     render();
-
-    // Авто-обновление для анимаций
-    if (currentMode == 1) {
-      static unsigned long lastRainbowUpdate = 0;
-      if (millis() - lastRainbowUpdate > 50) {
-        lastRainbowUpdate = millis();
-        renderRainbow();
-        FastLED.show();
-      }
-    }
-    yield();
   }
 
-  void setEnabledCount(uint8_t count) {
-    if (count <= LED_COUNT)
-      enabledCount = count;
-    else
-      enabledCount = LED_COUNT;
-  }
+  void nextMode() { setMode(currentMode + 1); }
+  void prevMode() { setMode(currentMode - 1); }
 
-  void setMode(uint8_t newMode) {
-    if (newMode < 3) { // Только 0, 1, 2
-      currentMode = newMode;
-    }
-  }
-
-  void increaseBrightness(int amount = 4) {
+  void increaseEnableLeds(int amount = 1) {
     setEnabledCount(enabledCount + amount);
   }
 
-  void decreaseBrightness(int amount = 4) {
-    if (amount <= enabledCount) {
-      setEnabledCount(enabledCount - amount);
-    } else {
-      setEnabledCount(0);
-    }
-  }
-
-  void turnOff() {
-    setEnabledCount(0);
-    currentMode = 0;
+  void decreaseEnableLeds(int amount = 1) {
+    setEnabledCount(enabledCount - amount);
   }
 
   void turnOn() { setEnabledCount(LED_COUNT); }
-
-  // Методы доступа
-  uint8_t getEnabledCount() const { return enabledCount; }
-  uint8_t getMode() const { return currentMode; }
 
   // Неблокирующий метод для плавного затухания ленты
   void startFadeOut(uint32_t durationMs = 1000) {
@@ -103,12 +68,17 @@ public:
   }
 
 private:
+  void setMode(uint8_t newMode) { currentMode = constrain(newMode, 0, 2); }
+
+  void setEnabledCount(uint8_t count) {
+    enabledCount = constrain(count, 0, LED_COUNT);
+  }
+
   void render() {
     FastLED.clear();
-    yield();
     switch (currentMode) {
     case 0:
-      renderWarmWhite();
+      renderOrange();
       break;
     case 1:
       renderRainbow();
@@ -117,22 +87,29 @@ private:
       renderCoolWhite();
       break;
     }
-
     FastLED.show();
     yield();
   }
 
-  void renderWarmWhite() {
+  void renderOrange() {
     for (int i = 0; i < enabledCount && i < LED_COUNT; i++) {
-      leds[i] = CRGB(255, 180, 100);
+      leds[i] = CRGB::OrangeRed;
     }
   }
 
-  void renderRainbow() {
+  void renderRainbow(uint8_t speed = 1) {
+    static unsigned long lastRainbowUpdate = millis();
+    static uint8_t hueOffset = 0;
+    uint8_t _speed = constrain(speed, 1, 10);
+
     for (int i = 0; i < enabledCount && i < LED_COUNT; i++) {
       leds[i] = CHSV(hueOffset + (i * 5), 255, 255);
     }
-    hueOffset += 2;
+
+    if (millis() - lastRainbowUpdate > (100 / _speed)) {
+      lastRainbowUpdate = millis();
+      hueOffset += 2;
+    }
   }
 
   void renderCoolWhite() {
