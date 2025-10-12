@@ -57,17 +57,17 @@ public:
     config.alarm.hours = h;
     config.alarm.minutes = m;
     calculateDawnTime();
-    saveSettings();
+    config.commit();
   }
 
   void setEnabled(bool enabled) {
     config.alarm.enabled = enabled;
-    saveSettings();
+    config.commit();
   }
 
   void toggleAlarm() {
     config.alarm.enabled = !config.alarm.enabled;
-    saveSettings();
+    config.commit();
   }
 
   // Сбросить триггеры будильник, рассвет

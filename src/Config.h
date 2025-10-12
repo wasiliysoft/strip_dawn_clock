@@ -21,7 +21,15 @@
 // WiFi
 #define AP_NAME "SmartAlarmClock"
 
-struct Config {
+// Класс для управления настройками
+class Config {
+public:
+  // Инициализация EEPROM и загрузка настроек
+  void begin() {
+    EEPROM.begin(512);
+    load();
+  }
+
   struct {
     uint8_t hours = 7;
     uint8_t minutes = 0;
@@ -33,26 +41,28 @@ struct Config {
     uint8_t minutes = 0;
   } dawn;
 
-} config;
+  // Сохраняет настройки в EEPROM
+  void commit() {
+    EEPROM.write(0, alarm.hours);
+    EEPROM.write(1, alarm.minutes);
+    EEPROM.write(2, alarm.enabled);
+    EEPROM.commit();
+  }
 
-void loadSettings() {
-  config.alarm.hours = EEPROM.read(0);
-  config.alarm.minutes = EEPROM.read(1);
-  config.alarm.enabled = EEPROM.read(2);
+private:
+  // Загружает настройки из EEPROM и выполняет валидацию
+  void load() {
+    alarm.hours = EEPROM.read(0);
+    alarm.minutes = EEPROM.read(1);
+    alarm.enabled = EEPROM.read(2);
 
-  // Валидация загруженных значений
-  if (config.alarm.hours > 23)
-    config.alarm.hours = 7;
-  if (config.alarm.minutes > 59)
-    config.alarm.minutes = 0;
-}
-
-void saveSettings() {
-  EEPROM.write(0, config.alarm.hours);
-  EEPROM.write(1, config.alarm.minutes);
-  EEPROM.write(2, config.alarm.enabled);
-  EEPROM.commit();
-}
+    // Валидация загруженных значений
+    if (alarm.hours > 23)
+      alarm.hours = 7;
+    if (alarm.minutes > 59)
+      alarm.minutes = 0;
+  }
+};
 
 void beep(uint8_t count) {
   for (int i = 0; i < count; i++) {

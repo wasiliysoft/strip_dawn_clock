@@ -9,13 +9,13 @@ AlarmClock alarmClock;
 LEDStrip ledStrip;
 EncoderHandler encoder;
 WebUI ui;
+Config config;
 
 void setup() {
   Serial.begin(115200);
   Serial.println("\nStarting Smart Alarm Clock...");
 
-  EEPROM.begin(512);
-  loadSettings();
+  config.begin();
 
   // Инициализация компонентов
   setupWiFi();
