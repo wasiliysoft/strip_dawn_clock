@@ -3,12 +3,13 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 // Пины
-#define ENCODER_CLK 14 // D5 s1
-#define ENCODER_DT 12  // D6 s2
-#define ENCODER_SW 13  // D7 key
-#define STRIP_PIN 2    // D4
-#define BUZZER_PIN 5   // D1
-// #define STATUS_LED D2
+#define BUZZER_VOLUME 5  // 0..1023
+#define BUZZER_PIN 5     // D1
+#define ENCODER_CLK 14   // D5 s1
+#define ENCODER_DT 12    // D6 s2
+#define ENCODER_SW 13    // D7 key
+#define STRIP_PIN 4      // D2
+#define STATUS_LED_PIN 2 // D4
 
 // Настройки ленты
 #define LED_COUNT 29
@@ -16,7 +17,6 @@
 
 // Настройки будильника
 #define DAWN_DURATION 20 // минут
-#define BUZZER_VOLUME 5
 
 // WiFi
 #define AP_NAME "SmartAlarmClock"
@@ -64,13 +64,4 @@ private:
   }
 };
 
-void beep(uint8_t count) {
-  for (int i = 0; i < count; i++) {
-    analogWrite(BUZZER_PIN, BUZZER_VOLUME);
-    delay(50);
-    digitalWrite(BUZZER_PIN, LOW);
-    if (i < count - 1)
-      delay(100);
-  }
-}
 #endif

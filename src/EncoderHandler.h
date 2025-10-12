@@ -1,11 +1,20 @@
 #ifndef ENCODER_HANDLER_H
 #define ENCODER_HANDLER_H
-
-#include "AlarmClock.h"
-#include "Config.h"
-#include "LEDStrip.h"
 #include <EncButton.h>
+#ifndef CONFIG_H
+#include "Config.h"
+#endif
+#ifndef LED_STRIP_H
+#include "LEDStrip.h"
+#endif
+#ifndef BEEPER_H
+#include "Beeper.h"
+#endif
+#ifndef ALARM_CLOCK_H
+#include "AlarmClock.h"
+#endif
 
+extern Beeper beeper;
 extern AlarmClock alarmClock;
 extern LEDStrip ledStrip;
 
@@ -26,7 +35,7 @@ public:
     if (enc.click()) {
       if (alarmClock.isAlarmTriggered() || alarmClock.isDawnTiggered()) {
         alarmClock.cancelAlam();
-        beep(1);
+        beeper.startSingle();
       } else {
         ledStrip.startFadeOut();
       }
@@ -57,7 +66,7 @@ public:
 
     if (enc.hold()) {
       alarmClock.toggleAlarm();
-      beep(2);
+      beeper.startPulse(1);
       return;
     }
   }

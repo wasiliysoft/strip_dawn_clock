@@ -1,8 +1,8 @@
 #ifndef ALARM_CLOCK_H
 #define ALARM_CLOCK_H
-
+#ifndef CONFIG_H
 #include "Config.h"
-
+#endif
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 extern Config config;
