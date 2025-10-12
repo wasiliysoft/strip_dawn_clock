@@ -21,8 +21,9 @@ public:
     server.on("/toggleAlarm", [this]() { this->handleToggleAlarm(); });
     server.on("/lightOn", [this]() { this->handleLightOn(); });
     server.on("/lightOff", [this]() { this->handleLightOff(); });
-    server.on("/beeperRamp", [this]() { this->handleBeeperRamp(); });
+    server.on("/beeperTestAlarm", [this]() { this->handleBeeperTestAlarm(); });
     server.on("/beeperStop", [this]() { this->handleStopBeeper(); });
+    server.on("/setStrip", [this]() { this->handleSetStrip(); });
     server.begin();
     Serial.println("HTTP server started");
   }
@@ -30,15 +31,6 @@ public:
   void update() { server.handleClient(); }
 
 private:
-  void handleStopBeeper() {
-    beeper.stop();
-    server.send(200, "text/plain", "Beeper stopped");
-  }
-  void handleBeeperRamp() {
-
-    beeper.startAlarmBeep();
-    server.send(200, "text/plain", "Beeper ramp started");
-  }
   void handleRoot() {
     String html = R"=====(
 <!DOCTYPE html>
@@ -61,24 +53,31 @@ private:
 <body>
     <div class="container">
         <div class="card">
-            <h2>Smart Alarm Clock</h2>
-            <div class="status" id="status">Loading...</div>
+            <h2>Будильник "Рассвет"</h2>
+            <div class="status" id="status">Loading...</div><br>
+            <button onclick="toggleAlarm()">Переключить будильник</button>
         </div>
 
         <div class="card">
-            <h3>Set Alarm</h3>
+            <h3>Установка будильника</h3>
             <input type="number" id="alarmHours" placeholder="HH" min="0" max="23" value="7">
             <input type="number" id="alarmMinutes" placeholder="MM" min="0" max="59" value="0">
-            <button onclick="setAlarm()">Set Alarm</button>
+            <button onclick="setAlarm()">Применить</button>
         </div>
-
         <div class="card">
-            <h3>Controls</h3>
-            <button onclick="toggleAlarm()">Toggle Alarm</button>
-            <button onclick="lightOn()">Light On</button>
-            <button onclick="lightOff()">Light Off</button>
-            <button onclick="beeperRamp()">Beeper Ramp</button>
-            <button onclick="beeperStop()">Beeper Stop</button>
+            <h3>Настройки ленты</h3>
+            <label for="ledCount">Количество диодов (1-255):</label>
+            <input type="number" id="ledCount" min="1" max="255" value="29"><br>
+            <label for="brighness">Яркость (1-255):</label>
+            <input type="number" id="brighness"  min="1" max="255" value="128"><br>
+            <button onclick="setStrip()">Применить</button>
+        </div>
+        <div class="card">
+            <h3>Управление</h3>
+            <button onclick="beeperTestAlarm()">Тест громкости будильника</button>
+            <button onclick="beeperStop()">Прекратить мелодию</button><br>
+            <button onclick="lightOn()">Вкл. ленту</button>
+            <button onclick="lightOff()">Откл. ленту</button>
         </div>
     </div>
 
@@ -89,10 +88,13 @@ private:
                 .then(data => {
                     const statusElement = document.getElementById('status');
                     statusElement.innerHTML = 
-                        `🕒 Time: <b>${data.time}</b><br>` +
-                        `⏰ Alarm: <b>${data.alarm}</b> <span class="${data.alarmEnabled ? 'on' : 'off'}">${data.alarmEnabled ? 'ON' : 'OFF'}</span><br>` +
-                        `🌅 Dawn: <b>${data.dawn}</b><br>` +
-                        `📶 WiFi: ${data.wifi}`;
+                        `🕒 Время: <b>${data.time}</b><br>` +
+                        `⏰ Будильник: <b>${data.alarm}</b> <span class="${data.alarmEnabled ? 'on' : 'off'}">${data.alarmEnabled ? 'ON' : 'OFF'}</span><br>` +
+                        `🌅 Рассвет: <b>${data.dawn}</b><br>` +
+                        `📶 WiFi: <b>${data.wifi}</b><br>` +
+                        `📶 RSSI: <b>${data.rssi} dBm</b><br>` +
+                        `💡 Количество диодов: <b>${data.ledCount}</b><br>`+
+                        `💡 Яркость: <b>${data.ledBrightness}</b>`;
                 })
                 .catch(err => {
                     document.getElementById('status').innerHTML = 'Error loading status';
@@ -107,6 +109,14 @@ private:
                 .catch(err => alert('Error setting alarm'));
         }
 
+        function setStrip() {
+            const ledCount = document.getElementById('ledCount').value; 
+            const brightness = document.getElementById('brighness').value;
+            fetch(`/setStrip?count=${ledCount}&brightness=${brightness}`)
+                .then(() => alert('Настройки ленты сохранены успешно'))
+                .catch(err => alert('Ошибка сохранения настроек ленты'));
+        }
+
         function toggleAlarm() {
             fetch('/toggleAlarm').then(updateStatus);
         }
@@ -119,8 +129,8 @@ private:
             fetch('/lightOff').then(() => console.log('Light turned off')); 
         }
 
-        function beeperRamp() { 
-            fetch('/beeperRamp').then(() => console.log('Beeper ramp started')); 
+        function beeperTestAlarm() { 
+            fetch('/beeperTestAlarm').then(() => console.log('Beeper ramp started')); 
         }
         function beeperStop() { 
             fetch('/beeperStop').then(() => console.log('Beeper stopped')); 
@@ -142,7 +152,10 @@ private:
     doc["alarm"] = alarmClock.getAlarmString();
     doc["dawn"] = alarmClock.getDawnString();
     doc["alarmEnabled"] = alarmClock.isAlarmEnabled();
+    doc["ledCount"] = config.ledCount;
+    doc["ledBrightness"] = config.ledBrightness;
     doc["wifi"] = WiFi.SSID();
+    doc["rssi"] = WiFi.RSSI();
 
     String response;
     serializeJson(doc, response);
@@ -179,6 +192,29 @@ private:
   void handleLightOff() {
     ledStrip.startFadeOut();
     server.send(200, "text/plain", "Light OFF");
+  }
+  void handleSetStrip() {
+    if (server.hasArg("count") && server.hasArg("brightness")) {
+      int count = server.arg("count").toInt();
+      int brightness = server.arg("brightness").toInt();
+      config.ledCount = count;
+      config.ledBrightness = brightness;
+      config.commit();
+      server.send(200, "text/plain", "LED strip settings updated");
+      delay(1000);
+      ESP.restart(); // Перезагрузка для применения новых настроек
+    } else {
+      server.send(400, "text/plain", "Missing parameters");
+    }
+  }
+
+  void handleStopBeeper() {
+    beeper.stop();
+    server.send(200, "text/plain", "Beeper stopped");
+  }
+  void handleBeeperTestAlarm() {
+    beeper.startAlarmBeep();
+    server.send(200, "text/plain", "Beeper started");
   }
 };
 

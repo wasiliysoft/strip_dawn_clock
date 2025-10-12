@@ -24,7 +24,7 @@ void setup() {
   setupWiFi();
   ui.begin();
   alarmClock.begin();
-  ledStrip.begin();
+  ledStrip.begin(config.ledCount, config.ledBrightness);
   encoder.begin();
 
   digitalWrite(STATUS_LED_PIN, HIGH); // LED off initially

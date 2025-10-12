@@ -11,10 +11,6 @@
 #define STRIP_PIN 4      // D2
 #define STATUS_LED_PIN 2 // D4
 
-// Настройки ленты
-#define LED_COUNT 29
-#define LED_BRIGHTNESS 150
-
 // Настройки будильника
 #define DAWN_DURATION 20 // минут
 
@@ -29,6 +25,9 @@ public:
     EEPROM.begin(512);
     load();
   }
+
+  uint8_t ledCount = 0;      // Количество светодиодов в ленте
+  uint8_t ledBrightness = 0; // Яркость ленты (0- 255)
 
   struct {
     uint8_t hours = 7;
@@ -46,6 +45,8 @@ public:
     EEPROM.write(0, alarm.hours);
     EEPROM.write(1, alarm.minutes);
     EEPROM.write(2, alarm.enabled);
+    EEPROM.write(3, ledCount);
+    EEPROM.write(4, ledBrightness);
     EEPROM.commit();
   }
 
@@ -55,12 +56,13 @@ private:
     alarm.hours = EEPROM.read(0);
     alarm.minutes = EEPROM.read(1);
     alarm.enabled = EEPROM.read(2);
-
+    ledCount = EEPROM.read(3);
+    ledBrightness = EEPROM.read(4);
     // Валидация загруженных значений
-    if (alarm.hours > 23)
-      alarm.hours = 7;
-    if (alarm.minutes > 59)
-      alarm.minutes = 0;
+    alarm.hours = constrain(alarm.hours, 0, 23);
+    alarm.minutes = constrain(alarm.minutes, 0, 59);
+    ledCount = constrain(ledCount, 1, 255);
+    ledBrightness = constrain(ledBrightness, 1, 255);
   }
 };
 
