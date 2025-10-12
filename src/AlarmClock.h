@@ -46,13 +46,21 @@ public:
   void setEnabled(bool enabled) {
     config.alarm.enabled = enabled;
     config.commit();
-    beeper.startPulse(config.alarm.enabled ? 2 : 1, 50U, 100U);
+    if (config.alarm.enabled) {
+      beeper.startTwoBeep();
+    } else {
+      beeper.startOneBeep();
+    }
   }
 
   void toggleAlarm() {
     config.alarm.enabled = !config.alarm.enabled;
     config.commit();
-    beeper.startPulse(config.alarm.enabled ? 2 : 1, 50U, 100U);
+    if (config.alarm.enabled) {
+      beeper.startTwoBeep();
+    } else {
+      beeper.startOneBeep();
+    }
   }
 
   // Сбросить триггеры будильник, рассвет

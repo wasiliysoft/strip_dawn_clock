@@ -39,8 +39,8 @@ private:
     server.send(200, "text/plain", "Beeper stopped");
   }
   void handleBeeperRamp() {
-    uint16_t patt[] = {50, 100, 50, 100, 50, 100, 50, 500};
-    beeper.startPattern(patt, 8, 3, BUZZER_VOLUME);
+
+    beeper.startAlarmBeep();
     server.send(200, "text/plain", "Beeper ramp started");
   }
   void handleRoot() {

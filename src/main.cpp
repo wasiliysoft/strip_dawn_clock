@@ -36,7 +36,7 @@ void loop() {
   alarmClock.update();
   ledStrip.update();
   encoder.update();
-  beeper.handle();
+  beeper.update();
   digitalWrite(STATUS_LED_PIN, alarmClock.isAlarmEnabled() ? LOW : HIGH);
   // Быстрая обработка
   delay(1);

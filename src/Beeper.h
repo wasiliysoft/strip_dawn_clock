@@ -1,98 +1,106 @@
 #ifndef BEEPER_H
 #define BEEPER_H
-#ifndef CONFIG_H
-#include "Config.h"
-#endif
+
 class Beeper {
 public:
-  Beeper()
-      : _pin(255), _maxVolume(255), _seqCount(0), _seqPlayed(0), _seqToneMs(0),
-        _seqPauseMs(0), _seqVolume(0), _seqOn(false), _seqLastMs(0) {}
+  Beeper() = default;
 
-  // Инициализация пина
-  void begin(uint8_t pin = BUZZER_PIN, uint16_t maxVolume = 255) {
+  // Инициализация пина и громкости
+  // volume: 0-255
+  void begin(uint8_t pin = 0, uint16_t volume = 0) {
     _pin = pin;
-    _maxVolume = constrain(maxVolume, 0, 1023);
+    _volume = volume;
     pinMode(_pin, OUTPUT);
-    analogWrite(_pin, 0);
   }
 
   // Вызывать в loop() — обрабатывает текущие звуковые события
-  void handle() {
+  void update() {
     unsigned long now = millis();
-
-    // Обработка последовательности гудков (приоритет выше, чем ramp)
-    if (_seqCount > 0) {
-      if (_seqOn) {
-        if (now - _seqLastMs >= _seqToneMs) {
-          // выключаем тон
-          analogWrite(_pin, 0);
-          _seqOn = false;
-          _seqLastMs = now;
-          _seqPlayed++;
-        }
-      } else {
-        if (now - _seqLastMs >= _seqPauseMs) {
-          if (_seqPlayed >= _seqCount) {
-            // закончились гудки
-            _seqCount = 0;
-            _seqPlayed = 0;
-            _seqOn = false;
-            _seqLastMs = 0;
-            // оставляем pin в выключенном состоянии; if ramp active, it will
-            // set level below
+    if (_pattern.active && _pattern.count > 0) {
+      if (now - _pattern.lastMs >= _pattern.arr[_pattern.pos]) {
+        // advance position
+        _pattern.pos++;
+        if (_pattern.pos >= _pattern.count) {
+          // finished one repetition
+          _pattern.repeatsLeft--;
+          if (_pattern.repeatsLeft <= 0) {
+            // pattern finished
+            _pattern = {};
             analogWrite(_pin, 0);
-          } else {
-            // включаем следующий тон
-            analogWrite(_pin, constrain(_seqVolume, 0, _maxVolume));
-            _seqOn = true;
-            _seqLastMs = now;
+            return;
           }
+          _pattern.pos = 0;
         }
+        // even -> tone on, odd -> pause
+        if ((_pattern.pos % 2) == 0) {
+          analogWrite(_pin, _volume);
+        } else {
+          analogWrite(_pin, 0);
+        }
+        _pattern.lastMs = now;
       }
-      // если последовательность активна — не трогаем ramp дальше
-      // (последовательность управляет pin)
       return;
     }
   }
 
-  // Запустить серию коротких гудков (неблокирующе)
-  // count - количество гудков, toneMs - длительность одного гудка, pauseMs -
-  // пауза между ними, volume - амплитуда
-  void startPulse(int count = 3, uint16_t toneMs = 50, uint16_t pauseMs = 150,
-                  uint16_t volume = BUZZER_VOLUME) {
-    _seqCount = max(1, count);
-    _seqPlayed = 0;
-    _seqToneMs = toneMs;
-    _seqPauseMs = pauseMs;
-    _seqVolume = constrain(volume, 0, _maxVolume);
-    _seqOn = true;
-    _seqLastMs = millis();
-    analogWrite(_pin, _seqVolume);
+  void startOneBeep() {
+    const uint16_t pattern[] = {50, 0};
+    startPattern(pattern, 2);
   }
 
-  void startPattern(uint16_t *pattern, int count = 3,int repeats = 1,
-                    uint16_t volume = BUZZER_VOLUME) {}
+  void startTwoBeep() {
+    const uint16_t pattern[] = {50, 100, 50, 0};
+    startPattern(pattern, 4);
+  }
+
+  void startAlarmBeep() {
+    const uint16_t pattern[] = {50, 100, 50, 100, 50, 100, 50, 500};
+    startPattern(pattern, 8, 10);
+  }
+
   // Остановить все звуки
   void stop() {
-    _seqCount = 0;
-    _seqPlayed = 0;
-    _seqOn = false;
+    _pattern = {};
     analogWrite(_pin, 0);
   }
 
 private:
   uint8_t _pin;
-  uint16_t _maxVolume;
+  uint8_t _volume;
 
-  // sequence (pulses)
-  uint8_t _seqCount;
-  uint8_t _seqPlayed;
-  uint32_t _seqToneMs;
-  uint32_t _seqPauseMs;
-  uint16_t _seqVolume;
-  bool _seqOn;
-  uint32_t _seqLastMs;
+  static const int BEEPER_PATTERN_MAX = 32;
+  struct Pattern {
+    uint16_t arr[BEEPER_PATTERN_MAX];
+    int count = 0;
+    int pos = 0;
+    int repeatsLeft = 0;
+    bool active = false;
+    uint32_t lastMs = 0;
+  } _pattern;
+
+  void startPattern(const uint16_t *pattern, int count = 3, int repeats = 1) {
+    if (pattern == nullptr || count <= 0 || repeats <= 0)
+      return;
+    int c = min(count, (int)BEEPER_PATTERN_MAX);
+    for (int i = 0; i < c; ++i)
+      _pattern.arr[i] = pattern[i];
+    _pattern.count = c;
+    _pattern.pos = 0;
+    _pattern.repeatsLeft = repeats;
+
+    _pattern.active = true;
+    _pattern.lastMs = millis();
+    // start with tone or pause based on pos parity (pos==0 -> tone)
+    if ((_pattern.pos % 2) == 0)
+      analogWrite(_pin, _volume);
+    else
+      analogWrite(_pin, 0);
+  }
+
+  // overload to preserve previous non-const signature
+  void startPattern(uint16_t *pattern, int count = 3, int repeats = 1) {
+    startPattern((const uint16_t *)pattern, count, repeats);
+  }
 };
 
 #endif // BEEPER_H
