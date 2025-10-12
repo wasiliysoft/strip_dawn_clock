@@ -64,7 +64,7 @@ public:
   }
 
   // Сбросить триггеры будильник, рассвет
-  void cancelAlam() {
+  void cancelAlarm() {
     alarmTriggered = false;
     dawnTriggered = false;
     beeper.stop();
@@ -109,6 +109,7 @@ private:
       if (currentHour == config.alarm.hours &&
           currentMinute == config.alarm.minutes) {
         alarmTriggered = true;
+        beeper.startAlarmBeep();
         Serial.println("Alarm!");
       }
     }

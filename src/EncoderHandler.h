@@ -30,7 +30,7 @@ public:
 
     if (enc.click()) {
       if (alarmClock.isAlarmTriggered() || alarmClock.isDawnTiggered()) {
-        alarmClock.cancelAlam();
+        alarmClock.cancelAlarm();
       } else {
         ledStrip.startFadeOut();
       }
