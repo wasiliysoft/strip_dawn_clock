@@ -12,7 +12,7 @@ LEDStrip ledStrip;
 EncoderHandler encoder;
 WebUI ui;
 Config config;
-
+WiFiMgr wifiMgr;
 void setup() {
   Serial.begin(115200);
   Serial.println("\nStarting Smart Alarm Clock...");
@@ -21,7 +21,7 @@ void setup() {
   config.begin();
   beeper.begin(BUZZER_PIN, BUZZER_VOLUME);
   // Инициализация компонентов
-  setupWiFi();
+  wifiMgr.begin(AP_NAME);
   ui.begin();
   alarmClock.begin();
   ledStrip.begin(config.ledCount, config.ledBrightness);
@@ -34,10 +34,11 @@ void setup() {
 void loop() {
   ui.update();
   alarmClock.update();
+  digitalWrite(STATUS_LED_PIN, alarmClock.isAlarmEnabled() ? LOW : HIGH);
   ledStrip.update();
   encoder.update();
   beeper.update();
-  digitalWrite(STATUS_LED_PIN, alarmClock.isAlarmEnabled() ? LOW : HIGH);
+  wifiMgr.update();
   // Быстрая обработка
   delay(1);
 }

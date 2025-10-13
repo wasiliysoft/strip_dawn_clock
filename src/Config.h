@@ -15,7 +15,7 @@
 #define DAWN_DURATION 20 // минут
 
 // WiFi
-#define AP_NAME "SmartAlarmClock"
+#define AP_NAME "DawnAlarm"
 
 // Класс для управления настройками
 class Config {
