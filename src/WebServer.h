@@ -19,7 +19,8 @@ public:
     server.on("/status", [this]() { this->handleStatus(); });
     server.on("/setAlarm", [this]() { this->handleSetAlarm(); });
     server.on("/toggleAlarm", [this]() { this->handleToggleAlarm(); });
-    server.on("/toggleMuteWeekend", [this]() { this->handleToggleMuteWeekend(); });
+    server.on("/toggleMuteWeekend",
+              [this]() { this->handleToggleMuteWeekend(); });
     server.on("/lightOn", [this]() { this->handleLightOn(); });
     server.on("/lightOff", [this]() { this->handleLightOff(); });
     server.on("/beeperTestAlarm", [this]() { this->handleBeeperTestAlarm(); });
@@ -84,6 +85,24 @@ private:
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            initialize();
+        });
+
+        function initialize() {
+            fetch('/status')
+              .then(r => r.json())
+              .then(data => {
+                  document.getElementById('alarmHours').value = data.alarm.split(':')[0];
+                  document.getElementById('alarmMinutes').value = data.alarm.split(':')[1];
+                  document.getElementById('ledCount').value = data.ledCount;
+                  document.getElementById('brighness').value = data.ledBrightness;
+              })
+              .catch(err => {
+                  console.error('Error loading initial settings', err);
+              });
+        }
+              
         function updateStatus() {
             fetch('/status')
                 .then(r => r.json())
@@ -92,7 +111,7 @@ private:
                     statusElement.innerHTML = 
                         `🕒 Время: <b>${data.time}</b><br>` +
                         `⏰ Будильник: <b>${data.alarm}</b> <span class="${data.alarmEnabled ? 'on' : 'off'}">${data.alarmEnabled ? 'ВКЛ.' : 'ОТКЛ.'}</span><br>` +
-                        `⏰ Попускать субботу и воскресенье: <span class="${data.isMuteWeekend ? 'on' : 'off'}">${data.isMuteWeekend ? 'ДА' : 'НЕТ'}</span><br>` +
+                        `⏰ Пропускать субботу и воскресенье: <span class="${data.isMuteWeekend ? 'on' : 'off'}">${data.isMuteWeekend ? 'ДА' : 'НЕТ'}</span><br>` +
                         `🌅 Рассвет: <b>${data.dawn}</b><br>` +
                         `📶 WiFi: <b>${data.wifi}</b><br>` +
                         `📶 RSSI: <b>${data.rssi} dBm</b><br>` +
