@@ -28,6 +28,7 @@ public:
 
   uint8_t ledCount = 0;      // Количество светодиодов в ленте
   uint8_t ledBrightness = 0; // Яркость ленты (0- 255)
+  bool isMuteWeekend = true; // Выключать звук по выходным
 
   struct {
     uint8_t hours = 7;
@@ -47,6 +48,7 @@ public:
     EEPROM.write(2, alarm.enabled);
     EEPROM.write(3, ledCount);
     EEPROM.write(4, ledBrightness);
+    EEPROM.write(5, isMuteWeekend);
     EEPROM.commit();
   }
 
@@ -58,6 +60,7 @@ private:
     alarm.enabled = EEPROM.read(2);
     ledCount = EEPROM.read(3);
     ledBrightness = EEPROM.read(4);
+    isMuteWeekend = EEPROM.read(5) ? true : false;
     // Валидация загруженных значений
     alarm.hours = constrain(alarm.hours, 0, 23);
     alarm.minutes = constrain(alarm.minutes, 0, 59);

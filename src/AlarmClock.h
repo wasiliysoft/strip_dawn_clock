@@ -92,13 +92,17 @@ public:
   bool isDawnTiggered() const { return dawnTriggered; }
   bool isAlarmEnabled() const { return config.alarm.enabled; }
 
+  bool isWeekEnd() const {
+    return timeClient.getDay() % 6 == 0; // 0 - Sunday, 6 - Saturday
+  }
+
 private:
   void tick() {
     timeClient.update();
     uint8_t currentHour = timeClient.getHours();
     uint8_t currentMinute = timeClient.getMinutes();
 
-    if (config.alarm.enabled) {
+    if (config.alarm.enabled && !(config.isMuteWeekend && isWeekEnd())) {
       // Проверка начала рассвета
       if (currentHour == config.dawn.hours &&
           currentMinute == config.dawn.minutes) {
@@ -114,6 +118,7 @@ private:
       }
     }
   }
+
   void calculateDawnTime() {
     if (config.alarm.minutes >= DAWN_DURATION) {
       config.dawn.hours = config.alarm.hours;

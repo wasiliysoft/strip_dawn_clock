@@ -19,6 +19,7 @@ public:
     server.on("/status", [this]() { this->handleStatus(); });
     server.on("/setAlarm", [this]() { this->handleSetAlarm(); });
     server.on("/toggleAlarm", [this]() { this->handleToggleAlarm(); });
+    server.on("/toggleMuteWeekend", [this]() { this->handleToggleMuteWeekend(); });
     server.on("/lightOn", [this]() { this->handleLightOn(); });
     server.on("/lightOff", [this]() { this->handleLightOff(); });
     server.on("/beeperTestAlarm", [this]() { this->handleBeeperTestAlarm(); });
@@ -55,7 +56,8 @@ private:
         <div class="card">
             <h2>Будильник "Рассвет"</h2>
             <div class="status" id="status">Loading...</div><br>
-            <button onclick="toggleAlarm()">Переключить будильник</button>
+            <button onclick="toggleAlarm()">Переключить будильник</button><br>
+            <button onclick="toggleMuteWeekend()">Переключить пропуск по выходным</button>
         </div>
 
         <div class="card">
@@ -89,7 +91,8 @@ private:
                     const statusElement = document.getElementById('status');
                     statusElement.innerHTML = 
                         `🕒 Время: <b>${data.time}</b><br>` +
-                        `⏰ Будильник: <b>${data.alarm}</b> <span class="${data.alarmEnabled ? 'on' : 'off'}">${data.alarmEnabled ? 'ON' : 'OFF'}</span><br>` +
+                        `⏰ Будильник: <b>${data.alarm}</b> <span class="${data.alarmEnabled ? 'on' : 'off'}">${data.alarmEnabled ? 'ВКЛ.' : 'ОТКЛ.'}</span><br>` +
+                        `⏰ Попускать субботу и воскресенье: <span class="${data.isMuteWeekend ? 'on' : 'off'}">${data.isMuteWeekend ? 'ДА' : 'НЕТ'}</span><br>` +
                         `🌅 Рассвет: <b>${data.dawn}</b><br>` +
                         `📶 WiFi: <b>${data.wifi}</b><br>` +
                         `📶 RSSI: <b>${data.rssi} dBm</b><br>` +
@@ -121,6 +124,10 @@ private:
             fetch('/toggleAlarm').then(updateStatus);
         }
 
+        function toggleMuteWeekend() {
+            fetch('/toggleMuteWeekend').then(updateStatus);
+        }
+
         function lightOn() { 
             fetch('/lightOn').then(() => console.log('Light turned on')); 
         }
@@ -150,6 +157,7 @@ private:
 
     doc["time"] = alarmClock.getTimeString();
     doc["alarm"] = alarmClock.getAlarmString();
+    doc["isMuteWeekend"] = config.isMuteWeekend;
     doc["dawn"] = alarmClock.getDawnString();
     doc["alarmEnabled"] = alarmClock.isAlarmEnabled();
     doc["ledCount"] = config.ledCount;
@@ -184,6 +192,11 @@ private:
     server.send(200, "text/plain", "OK");
   }
 
+  void handleToggleMuteWeekend() {
+    config.isMuteWeekend = !config.isMuteWeekend;
+    config.commit();
+    server.send(200, "text/plain", "OK");
+  }
   void handleLightOn() {
     ledStrip.turnOn();
     server.send(200, "text/plain", "Light ON");
