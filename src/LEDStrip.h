@@ -31,7 +31,7 @@ public:
     static unsigned long lastMicros = 0;
     if (isFading && micros() - lastMicros >= 50) {
       lastMicros = micros();
-      uint8_t nb = constrain(FastLED.getBrightness() - 1, 0, _brightness);
+      uint8_t nb = constrain(FastLED.getBrightness() - 1, 0, 255);
       if (nb == 0) {
         // завершение затухания: выключаем ленту и сбрасываем флаг
         setEnabledCount(0);
@@ -51,12 +51,25 @@ public:
   void nextMode() { setMode(currentMode + 1); }
   void prevMode() { setMode(currentMode > 0 ? currentMode - 1 : 0); }
 
+  // Увеличивает количество включённых светодиодов на amount
+  // Если все светодиоды включены, увеличивает яркость на amount * 3
   void increaseEnableLeds(int amount = 1) {
     setEnabledCount(enabledCount + amount);
+    if (enabledCount == _ledCount) {
+      uint8_t nb = constrain(FastLED.getBrightness() + amount * 3, 0, 255);
+      FastLED.setBrightness(nb);
+    }
   }
-
+  // Уменьшает количество включённых светодиодов на amount
+  // Если все светодиоды включены, уменьшает яркость на amount * 3 (минимум до _brightness)
   void decreaseEnableLeds(int amount = 1) {
-    setEnabledCount(enabledCount > amount ? enabledCount - amount : 0);
+    if (FastLED.getBrightness() > _brightness) {
+      uint8_t nb =
+          constrain(FastLED.getBrightness() - amount * 3, _brightness, 255);
+      FastLED.setBrightness(nb);
+    } else {
+      setEnabledCount(enabledCount > amount ? enabledCount - amount : 0);
+    }
   }
 
   void turnOn() { setEnabledCount(_ledCount); }
