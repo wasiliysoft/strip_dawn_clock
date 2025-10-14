@@ -17,23 +17,21 @@ private:
   NTPClient timeClient;
 
   bool dawnTriggered = false;
+  unsigned long dawnStartEpoch = 0;
   bool alarmTriggered = false;
 
 public:
   AlarmClock() : timeClient(ntpUDP, "pool.ntp.org", 18000, 60000) {}
 
   void begin() {
-
     timeClient.begin();
+    timeClient.forceUpdate();
     calculateDawnTime();
   }
 
   void update() {
-    static unsigned long lastUpdate = 0;
-    if (millis() - lastUpdate >= 60000) {
-      lastUpdate = millis();
-      tick();
-    }
+    timeClient.update();
+    tick();
   }
 
   void setAlarm(uint8_t h, uint8_t m) {
@@ -96,25 +94,38 @@ public:
     return timeClient.getDay() % 6 == 0; // 0 - Sunday, 6 - Saturday
   }
 
+  unsigned long dawnProgress() {
+    unsigned long now = timeClient.getEpochTime();
+    unsigned long duration = DAWN_DURATION * 60;
+    unsigned long elapsed = now > dawnStartEpoch ? now - dawnStartEpoch : 0;
+    if (elapsed >= duration)
+      return 100;
+    return (elapsed * 100) / duration;
+  }
+
 private:
   void tick() {
-    timeClient.update();
-    uint8_t currentHour = timeClient.getHours();
-    uint8_t currentMinute = timeClient.getMinutes();
-
-    if (config.alarm.enabled && !(config.isMuteWeekend && isWeekEnd())) {
-      // Проверка начала рассвета
-      if (currentHour == config.dawn.hours &&
-          currentMinute == config.dawn.minutes) {
-        dawnTriggered = true;
-        Serial.println("Dawn started");
-      }
-      // Проверка будильника
-      if (currentHour == config.alarm.hours &&
-          currentMinute == config.alarm.minutes) {
-        alarmTriggered = true;
-        beeper.startAlarmBeep();
-        Serial.println("Alarm!");
+    int currentMinute = timeClient.getMinutes();
+    int currentHour = timeClient.getHours();
+    static int lastMinutes = currentMinute; // инициализация при первом вызове,
+                                            // хранит занчение между вызовами
+    if (currentMinute != lastMinutes) {
+      lastMinutes = currentMinute;
+      if (config.alarm.enabled && !(config.isMuteWeekend && isWeekEnd())) {
+        // Проверка начала рассвета
+        if (currentHour == config.dawn.hours &&
+            currentMinute == config.dawn.minutes) {
+          dawnTriggered = true;
+          dawnStartEpoch = timeClient.getEpochTime();
+          Serial.println("Dawn started");
+        }
+        // Сработает когда рассвет уже был запущен и не сброшен
+        if (dawnTriggered && currentHour == config.alarm.hours &&
+            currentMinute == config.alarm.minutes) {
+          alarmTriggered = true;
+          beeper.startAlarmBeep();
+          Serial.println("Alarm!");
+        }
       }
     }
   }
