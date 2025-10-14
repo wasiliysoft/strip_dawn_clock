@@ -12,7 +12,7 @@
 #define STATUS_LED_PIN 2 // D4
 
 // Настройки будильника
-#define DAWN_DURATION 20 // минут
+#define DAWN_DURATION 5 // минут
 
 // WiFi
 #define AP_NAME "DawnAlarm"

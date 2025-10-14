@@ -94,21 +94,22 @@ public:
     return timeClient.getDay() % 6 == 0; // 0 - Sunday, 6 - Saturday
   }
 
+  // Возвращает прогресс рассвета от 0 до 1024
   unsigned long dawnProgress() {
     unsigned long now = timeClient.getEpochTime();
     unsigned long duration = DAWN_DURATION * 60;
     unsigned long elapsed = now > dawnStartEpoch ? now - dawnStartEpoch : 0;
     if (elapsed >= duration)
-      return 100;
-    return (elapsed * 100) / duration;
+      return 1024;
+    return (elapsed * 1024 / duration);
   }
 
 private:
   void tick() {
     int currentMinute = timeClient.getMinutes();
     int currentHour = timeClient.getHours();
-    static int lastMinutes = currentMinute; // инициализация при первом вызове,
-                                            // хранит занчение между вызовами
+    static int lastMinutes = 0; // инициализация при первом вызове,
+                                // хранит занчение между вызовами
     if (currentMinute != lastMinutes) {
       lastMinutes = currentMinute;
       if (config.alarm.enabled && !(config.isMuteWeekend && isWeekEnd())) {

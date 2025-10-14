@@ -4,5 +4,13 @@
         "ranges": "cpp",
         "cstddef": "cpp",
         "limits": "cpp"
+    },
+    "files.exclude": {
+        "lib": true,
+        // "**/build": true,
+        // "**/dist": true,
+        "**/.git": true,
+        // "**/tmp": true,
+        // "**/logs": true
     }
 }

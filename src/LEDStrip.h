@@ -48,8 +48,8 @@ public:
     render();
   }
 
-  void nextMode() { setMode(currentMode + 1); }
-  void prevMode() { setMode(currentMode > 0 ? currentMode - 1 : 0); }
+  void nextMode() { setMode(max(currentMode + 1, 2)); }
+  void prevMode() { setMode(min(currentMode - 1, 0)); }
 
   // Увеличивает количество включённых светодиодов на amount
   // Если все светодиоды включены, увеличивает яркость на amount * 3
@@ -61,7 +61,8 @@ public:
     }
   }
   // Уменьшает количество включённых светодиодов на amount
-  // Если все светодиоды включены, уменьшает яркость на amount * 3 (минимум до _brightness)
+  // Если все светодиоды включены, уменьшает яркость на amount * 3 (минимум до
+  // _brightness)
   void decreaseEnableLeds(int amount = 1) {
     if (FastLED.getBrightness() > _brightness) {
       uint8_t nb =
@@ -74,17 +75,39 @@ public:
 
   void turnOn() { setEnabledCount(_ledCount); }
 
-  void dawn(unsigned int percent) {
-    setMode(0);
-    percent = constrain(percent, 0, 100);
-    setEnabledCount((_ledCount * percent) / 100);
-    FastLED.setBrightness(_brightness * percent / 100);
+  // Устанавливает прогресс рассвета от 0 до 1024
+  // 0 - всё выключено, 1024 - все включено на полной яркости
+  // Логика рассвета: каждлый диод плавно повышает яркость, затем включается
+  // следующий и т.д.
+  void dawn(unsigned long progress) {
+    setMode(99); // специальный режим рассвета
+    progress = min(progress, 1024UL);
+    // Рассчитываем виртуальное "количество включенных светодиодов"
+    // с дробной частью
+    float fractionalLeds = (_ledCount * progress) / 1024.0f;
+    int fullLeds = (int)fractionalLeds; // Целая часть - полностью включенные
+    float fractionalPart = fractionalLeds - fullLeds; // Дробная часть (0.0-1.0)
+
+    for (int i = 0; i < _ledCount; i++) {
+      if (i < fullLeds) {
+        // Полностью включенные
+        leds[i] = CHSV(16, 255, _brightness);
+      } else if (i == fullLeds) {
+        // Плавно включающийся светодиод
+        uint8_t brightness = (uint8_t)(_brightness * fractionalPart);
+        leds[i] = CHSV(16, 255, brightness);
+      } else {
+        // Выключенные
+        leds[i] = CHSV(0, 0, 0);
+      }
+    }
+    FastLED.show();
   }
 
   void startFadeOut() { isFading = true; }
 
 private:
-  void setMode(uint8_t newMode) { currentMode = constrain(newMode, 0, 2); }
+  void setMode(uint8_t newMode) { currentMode = newMode; }
 
   void setEnabledCount(uint8_t count) {
     enabledCount = constrain(count, 0, _ledCount);
@@ -102,6 +125,8 @@ private:
     case 2:
       renderCoolWhite();
       break;
+    case 99:
+      return; // в режиме рассвета не рендерим
     }
     FastLED.show();
     yield();
