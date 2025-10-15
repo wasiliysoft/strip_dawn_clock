@@ -1,6 +1,6 @@
-// TODO: настройка длительности рассвета через веб-интерфейс
 // TODO: настройка длительности будильника через веб-интерфейс
-// TODO: уровень сигнала будильника через веб-интерфейс (но через PWM это работает плохо)
+// TODO: уровень сигнала будильника через веб-интерфейс (но через PWM это
+// работает плохо)
 // TODO: RSSI перевести в плохой, средний, хороший
 // TODO: Вресия прошивки
 // TODO: Обновление прошивки по WiFi
@@ -25,6 +25,7 @@ public:
     server.on("/", [this]() { this->handleRoot(); });
     server.on("/status", [this]() { this->handleStatus(); });
     server.on("/setAlarm", [this]() { this->handleSetAlarm(); });
+    server.on("/setDawnDuration", [this]() { this->handleSetDawnDuration(); });
     server.on("/toggleAlarm", [this]() { this->handleToggleAlarm(); });
     server.on("/toggleMuteWeekend",
               [this]() { this->handleToggleMuteWeekend(); });
@@ -70,9 +71,11 @@ private:
 
         <div class="card">
             <h3>Установка будильника</h3>
-            <input type="number" id="alarmHours" placeholder="HH" min="0" max="23" value="7">
-            <input type="number" id="alarmMinutes" placeholder="MM" min="0" max="59" value="0">
-            <button onclick="setAlarm()">Применить</button>
+            <input type="number" id="alarmHours" placeholder="ЧЧ" min="0" max="23" value="7">
+            <input type="number" id="alarmMinutes" placeholder="ММ" min="0" max="59" value="0">
+            <button onclick="setAlarm()">Применить</button></br>
+            <input type="nuber" id="dawnDuration" placeholder="Длительность рассвета (мин)" min="1" max="60" value="10">
+            <button onclick="setDawnDuration()">Применить</button>
         </div>
         <div class="card">
             <h3>Настройки ленты</h3>
@@ -104,6 +107,7 @@ private:
                   document.getElementById('alarmMinutes').value = data.alarm.split(':')[1];
                   document.getElementById('ledCount').value = data.ledCount;
                   document.getElementById('brighness').value = data.ledBrightness;
+                  document.getElementById('dawnDuration').value = data.dawnDuration;
               })
               .catch(err => {
                   console.error('Error loading initial settings', err);
@@ -119,7 +123,7 @@ private:
                         `🕒 Время: <b>${data.time}</b><br>` +
                         `⏰ Будильник: <b>${data.alarm}</b> <span class="${data.alarmEnabled ? 'on' : 'off'}">${data.alarmEnabled ? 'ВКЛ.' : 'ОТКЛ.'}</span><br>` +
                         `⏰ Пропускать субботу и воскресенье: <span class="${data.isMuteWeekend ? 'on' : 'off'}">${data.isMuteWeekend ? 'ДА' : 'НЕТ'}</span><br>` +
-                        `🌅 Рассвет: <b>${data.dawn}</b><br>` +
+                        `🌅 Рассвет: <b>${data.dawn}</b> (${data.dawnDuration} минут)<br>` +
                         `📶 WiFi: <b>${data.wifi}</b><br>` +
                         `📶 RSSI: <b>${data.rssi} dBm</b><br>` +
                         `💡 Количество диодов: <b>${data.ledCount}</b><br>`+
@@ -136,6 +140,12 @@ private:
             fetch('/setAlarm?h=' + hours + '&m=' + minutes)
                 .then(updateStatus)
                 .catch(err => alert('Error setting alarm'));
+        }
+        function setDawnDuration() {
+            const dawnDuration = document.getElementById('dawnDuration').value; 
+            fetch(`/setDawnDuration?duration=${dawnDuration}`)
+                .then(() => alert('Настройки рассвета сохранены успешно'))
+                .catch(err => alert('Ошибка сохранения настроек рассвета'));
         }
 
         function setStrip() {
@@ -183,6 +193,7 @@ private:
 
     doc["time"] = alarmClock.getTimeString();
     doc["alarm"] = alarmClock.getAlarmString();
+    doc["dawnDuration"] = config.dawnDuration;
     doc["isMuteWeekend"] = config.isMuteWeekend;
     doc["dawn"] = alarmClock.getDawnString();
     doc["alarmEnabled"] = alarmClock.isAlarmEnabled();
@@ -207,6 +218,21 @@ private:
         server.send(200, "text/plain", "Alarm set successfully");
       } else {
         server.send(400, "text/plain", "Invalid time format");
+      }
+    } else {
+      server.send(400, "text/plain", "Missing parameters");
+    }
+  }
+
+  void handleSetDawnDuration() {
+    if (server.hasArg("duration")) {
+      int duration = server.arg("duration").toInt();
+      // Валидация ввода
+      if (duration >= 1 && duration <= 60) {
+        alarmClock.setDawnDuration(duration);
+        server.send(200, "text/plain", "Dawn duration set successfully");
+      } else {
+        server.send(400, "text/plain", "Invalid duration format");
       }
     } else {
       server.send(400, "text/plain", "Missing parameters");

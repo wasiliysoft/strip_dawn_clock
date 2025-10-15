@@ -41,6 +41,12 @@ public:
     config.commit();
   }
 
+  void setDawnDuration(uint8_t minutes) {
+    config.dawnDuration = minutes;
+    calculateDawnTime();
+    config.commit();
+  }
+
   void setEnabled(bool enabled) {
     config.alarm.enabled = enabled;
     config.commit();
@@ -97,7 +103,7 @@ public:
   // Возвращает прогресс рассвета от 0 до 1024
   unsigned long dawnProgress() {
     unsigned long now = timeClient.getEpochTime();
-    unsigned long duration = DAWN_DURATION * 60;
+    unsigned long duration = config.dawnDuration * 60;
     unsigned long elapsed = now > dawnStartEpoch ? now - dawnStartEpoch : 0;
     if (elapsed >= duration)
       return 1024;
@@ -132,13 +138,13 @@ private:
   }
 
   void calculateDawnTime() {
-    if (config.alarm.minutes >= DAWN_DURATION) {
+    if (config.alarm.minutes >= config.dawnDuration) {
       config.dawn.hours = config.alarm.hours;
-      config.dawn.minutes = config.alarm.minutes - DAWN_DURATION;
+      config.dawn.minutes = config.alarm.minutes - config.dawnDuration;
     } else {
       config.dawn.hours =
           (config.alarm.hours == 0) ? 23 : config.alarm.hours - 1;
-      config.dawn.minutes = 60 - (DAWN_DURATION - config.alarm.minutes);
+      config.dawn.minutes = 60 - (config.dawnDuration - config.alarm.minutes);
     }
   }
 };
