@@ -2,8 +2,6 @@
 // TODO: уровень сигнала будильника через веб-интерфейс (но через PWM это
 // работает плохо)
 // TODO: RSSI перевести в плохой, средний, хороший
-// TODO: Вресия прошивки
-// TODO: Обновление прошивки по WiFi
 
 #ifndef WEB_SERVER_H
 #define WEB_SERVER_H
@@ -11,6 +9,7 @@
 #include "AlarmClock.h"
 #include "LEDStrip.h"
 #include <ArduinoJson.h>
+#include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266WebServer.h>
 extern AlarmClock alarmClock;
 extern LEDStrip ledStrip;
@@ -18,6 +17,7 @@ extern LEDStrip ledStrip;
 class WebUI {
 private:
   ESP8266WebServer server;
+  ESP8266HTTPUpdateServer httpUpdater;
 
 public:
   WebUI() : server(80) {}
@@ -34,7 +34,9 @@ public:
     server.on("/beeperTestAlarm", [this]() { this->handleBeeperTestAlarm(); });
     server.on("/beeperStop", [this]() { this->handleStopBeeper(); });
     server.on("/setStrip", [this]() { this->handleSetStrip(); });
+    httpUpdater.setup(&server);
     server.begin();
+
     Serial.println("HTTP server started");
   }
 
@@ -92,6 +94,10 @@ private:
             <button onclick="lightOn()">Вкл. ленту</button>
             <button onclick="lightOff()">Откл. ленту</button>
         </div>
+        <div class="card">
+            <h3>Информация</h3>
+            <p>Весряия прошивки: 1.0.0</p>
+            <button onclick='window.location.href="/update"'>Обновление прошивки</button>
     </div>
 
     <script>
