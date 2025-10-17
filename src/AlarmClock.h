@@ -16,9 +16,8 @@ private:
   WiFiUDP ntpUDP;
   NTPClient timeClient;
 
-  bool dawnTriggered = false;
+  int alarmStep = -1; // -1: ожидание, 0: рассвет, 1: будильник
   unsigned long dawnStartEpoch = 0;
-  bool alarmTriggered = false;
 
 public:
   AlarmClock() : timeClient(ntpUDP, "pool.ntp.org", 18000, 60000) {}
@@ -69,8 +68,7 @@ public:
 
   // Сбросить триггеры будильник, рассвет
   void cancelAlarm() {
-    alarmTriggered = false;
-    dawnTriggered = false;
+    alarmStep = -1;
     beeper.stop();
     beeper.startOneBeep();
   }
@@ -93,8 +91,8 @@ public:
     return String(buffer);
   }
 
-  bool isAlarmTriggered() const { return alarmTriggered; }
-  bool isDawnTiggered() const { return dawnTriggered; }
+  bool isAlarmTriggered() const { return alarmStep >= 1; }
+  bool isDawnTiggered() const { return alarmStep >= 0; }
   bool isAlarmEnabled() const { return config.alarm.enabled; }
 
   bool isWeekEnd() const {
@@ -123,7 +121,7 @@ private:
         // Проверка начала рассвета
         if (currentHour == config.dawn.hours &&
             currentMinute == config.dawn.minutes) {
-          dawnTriggered = true;
+          alarmStep = 0;
           dawnStartEpoch = timeClient.getEpochTime();
           Serial.println("Dawn started");
         }
@@ -131,15 +129,21 @@ private:
         // Сработает когда рассвет уже был запущен и не сброшен
         if (isDawnTiggered() && currentHour == config.alarm.hours &&
             currentMinute == config.alarm.minutes) {
-          alarmTriggered = true;
+          alarmStep = 1;
           Serial.println("Alarm triggered");
+        }
+
+        // Авто-стоп будильника через 30 минут
+        if (alarmStep > 30) {
+          cancelAlarm();
+          Serial.println("Alarm auto-canceled");
         }
 
         // Запуск мелодии будильника
         if (isAlarmTriggered()) {
+          alarmStep = alarmStep + 1;
           beeper.startAlarmBeep();
           Serial.println("Alarm!");
-          /* code */
         }
       }
     }
