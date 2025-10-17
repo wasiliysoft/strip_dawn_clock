@@ -63,7 +63,7 @@ public:
     if (config.alarm.enabled) {
       beeper.startTwoBeep();
     } else {
-      beeper.startOneBeep();
+      beeper.startOneLongBeep();
     }
   }
 
@@ -72,6 +72,7 @@ public:
     alarmTriggered = false;
     dawnTriggered = false;
     beeper.stop();
+    beeper.startOneBeep();
   }
 
   String getTimeString() { return timeClient.getFormattedTime(); }
@@ -126,12 +127,19 @@ private:
           dawnStartEpoch = timeClient.getEpochTime();
           Serial.println("Dawn started");
         }
+
         // Сработает когда рассвет уже был запущен и не сброшен
-        if (dawnTriggered && currentHour == config.alarm.hours &&
+        if (isDawnTiggered() && currentHour == config.alarm.hours &&
             currentMinute == config.alarm.minutes) {
           alarmTriggered = true;
+          Serial.println("Alarm triggered");
+        }
+
+        // Запуск мелодии будильника
+        if (isAlarmTriggered()) {
           beeper.startAlarmBeep();
           Serial.println("Alarm!");
+          /* code */
         }
       }
     }

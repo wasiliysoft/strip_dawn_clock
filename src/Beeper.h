@@ -53,6 +53,11 @@ public:
     startPattern(pattern, 4);
   }
 
+  void startOneLongBeep() {
+    const uint16_t pattern[] = {200, 0};
+    startPattern(pattern, 2);
+  }
+
   void startAlarmBeep() {
     const uint16_t pattern[] = {50, 100, 50, 100, 50, 100, 50, 500};
     startPattern(pattern, 8, 10);
