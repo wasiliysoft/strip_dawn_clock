@@ -34,8 +34,8 @@ void setup() {
 void loop() {
   ui.update();
   alarmClock.update();
-  digitalWrite(STATUS_LED_PIN, alarmClock.isAlarmEnabled() ? LOW : HIGH);
-  
+  //  digitalWrite(STATUS_LED_PIN, alarmClock.isAlarmEnabled() ? LOW : HIGH);
+
   if (alarmClock.isDawnTiggered()) {
     ledStrip.dawn(alarmClock.dawnProgress());
   }
