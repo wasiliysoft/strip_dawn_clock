@@ -18,11 +18,13 @@ private:
   uint8_t currentMode = 0;
 
   bool isFading = false;
+  bool _reverse = false;
 
 public:
-  void begin(uint8_t ledCount, uint8_t brightness) {
+  void begin(uint8_t ledCount, uint8_t brightness, bool reverse = true) {
     _ledCount = ledCount;
     _brightness = brightness;
+    _reverse = reverse;
     leds = new CRGB[ledCount];
     FastLED.addLeds<WS2812B, STRIP_PIN, GRB>(leds, _ledCount);
     FastLED.setBrightness(_brightness);
@@ -94,16 +96,18 @@ public:
     float fractionalPart = fractionalLeds - fullLeds; // Дробная часть (0.0-1.0)
 
     for (int i = 0; i < _ledCount; i++) {
+      int index = _reverse ? (_ledCount - 1 - i) : i;
+
       if (i < fullLeds) {
         // Полностью включенные
-        leds[i] = CHSV(16, 255, _brightness);
+        leds[index] = CHSV(16, 255, _brightness);
       } else if (i == fullLeds) {
         // Плавно включающийся светодиод
         uint8_t brightness = (uint8_t)(_brightness * fractionalPart);
-        leds[i] = CHSV(16, 255, brightness);
+        leds[index] = CHSV(16, 255, brightness);
       } else {
         // Выключенные
-        leds[i] = CHSV(0, 0, 0);
+        leds[index] = CHSV(0, 0, 0);
       }
     }
     FastLED.show();
@@ -139,17 +143,19 @@ private:
 
   void renderOrange() {
     for (int i = 0; i < enabledCount && i < _ledCount; i++) {
-      leds[i] = CRGB::OrangeRed;
+      int index = _reverse ? (_ledCount - 1 - i) : i;
+      leds[index] = CRGB::OrangeRed;
     }
   }
 
   void renderRainbow(uint8_t speed = 1) {
-    static unsigned long lastRainbowUpdate = millis();
+    static unsigned long lastRainbowUpdate = 0;
     static uint8_t hueOffset = 0;
     uint8_t _speed = constrain(speed, 1, 10);
 
     for (int i = 0; i < enabledCount && i < _ledCount; i++) {
-      leds[i] = CHSV(hueOffset + (i * 5), 255, 255);
+      int index = _reverse ? (_ledCount - 1 - i) : i;
+      leds[index] = CHSV((uint8_t) hueOffset + (i * 5), 255, 255);
     }
 
     if (millis() - lastRainbowUpdate > (100 / _speed)) {
@@ -160,7 +166,8 @@ private:
 
   void renderCoolWhite() {
     for (int i = 0; i < enabledCount && i < _ledCount; i++) {
-      leds[i] = CRGB(200, 200, 255);
+      int index = _reverse ? (_ledCount - 1 - i) : i;
+      leds[index] = CRGB(200, 200, 255);
     }
   }
 };
