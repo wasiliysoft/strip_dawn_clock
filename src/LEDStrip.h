@@ -53,8 +53,8 @@ public:
     render();
   }
 
-  void nextMode() { setMode(max(currentMode + 1, 2)); }
-  void prevMode() { setMode(min(currentMode - 1, 0)); }
+  void nextMode() { setMode(min(currentMode + 1, 2)); }
+  void prevMode() { setMode(max(currentMode - 1, 0)); }
 
   // Увеличивает количество включённых светодиодов на amount
   // Если все светодиоды включены, увеличивает яркость на amount * 3
