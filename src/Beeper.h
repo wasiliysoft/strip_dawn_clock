@@ -83,7 +83,8 @@ private:
     uint32_t lastMs = 0;
   } _pattern;
 
-  void startPattern(const uint16_t *pattern, int count = 3, int repeats = 1) {
+  void startPattern(const uint16_t *pattern, int count = 0, int repeats = 1) {
+    stop();
     if (pattern == nullptr || count <= 0 || repeats <= 0)
       return;
     int c = min(count, (int)BEEPER_PATTERN_MAX);
@@ -100,11 +101,6 @@ private:
       analogWrite(_pin, _volume);
     else
       analogWrite(_pin, 0);
-  }
-
-  // overload to preserve previous non-const signature
-  void startPattern(uint16_t *pattern, int count = 3, int repeats = 1) {
-    startPattern((const uint16_t *)pattern, count, repeats);
   }
 };
 

@@ -28,6 +28,7 @@ void setup() {
   encoder.begin();
 
   digitalWrite(STATUS_LED_PIN, HIGH); // LED off initially
+  beeper.startOneBeep();
   Serial.println("System ready!");
 }
 
