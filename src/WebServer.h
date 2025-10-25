@@ -48,143 +48,197 @@ private:
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Smart Alarm</title>
+    <title>⏰ Dawn Alarm</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="UTF-8">
     <style>
-        body { font-family: Arial; margin: 20px; background: #f0f0f0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; padding: 15px; background: #f5f5f5; }
         .container { max-width: 500px; margin: 0 auto; }
-        .card { background: white; padding: 20px; margin: 10px 0; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        button { background: #4CAF50; color: white; border: none; padding: 10px 15px; margin: 5px; border-radius: 5px; cursor: pointer; }
-        input { padding: 8px; margin: 5px; width: 80px; }
-        .status { color: #666; font-size: 16px; line-height: 1.5; }
+        .card { background: white; padding: 20px; margin-bottom: 15px; border-radius: 8px; }
+        h2, h3 { margin-bottom: 15px; }
+        button { 
+            background: #4CAF50; color: white; border: none; padding: 10px 15px; 
+            border-radius: 4px; cursor: pointer; margin: 5px; min-width: 120px;
+        }
+        button.secondary { background: #2196F3; }
+        input { 
+            padding: 10px; border: 1px solid #ddd; border-radius: 4px; 
+            width: 100%; margin-bottom: 12px;
+        }
+        .status { background: #f9f9f9; padding: 15px; border-radius: 4px; margin-bottom: 15px; }
         .on { color: green; font-weight: bold; }
         .off { color: red; font-weight: bold; }
+        .form-group { margin-bottom: 15px; }
+        .input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+        .input-row input { flex: 1; margin: 0; }
+        .button-row { display: flex; flex-wrap: wrap; margin-top: 10px; }
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .status-item { padding: 10px; background: #f0f0f0; border-radius: 4px; font-size: 13px; line-height: 1.6; }
+        .status-item div:first-child { margin-bottom: 8px; font-weight: 500; }
+        label { display: block; margin-bottom: 5px; font-weight: 500; }
+        @media (max-width: 480px) {
+            .status-grid { grid-template-columns: 1fr; }
+            .button-row { flex-direction: column; }
+            button { width: 100%; margin: 3px 0; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="card">
-            <h2>Будильник "Рассвет"</h2>
-            <div class="status" id="status">Loading...</div><br>
-            <button onclick="toggleAlarm()">Переключить будильник</button><br>
-            <button onclick="toggleMuteWeekend()">Переключить пропуск по выходным</button>
+            <h2>⏰ Будильник "Рассвет"</h2>
+            <div id="status">Загрузка...</div>
+            <div class="button-row">
+                <button onclick="toggleAlarm()">Переключить будильник</button>
+                <button onclick="toggleMuteWeekend()" class="secondary">Пропуск выходных</button>
+            </div>
         </div>
 
         <div class="card">
-            <h3>Установка будильника</h3>
-            <input type="number" id="alarmHours" placeholder="ЧЧ" min="0" max="23" value="7">
-            <input type="number" id="alarmMinutes" placeholder="ММ" min="0" max="59" value="0">
-            <button onclick="setAlarm()">Применить</button></br>
-            <input type="nuber" id="dawnDuration" placeholder="Длительность рассвета (мин)" min="1" max="60" value="10">
-            <button onclick="setDawnDuration()">Применить</button>
+            <h3>⏰ Установка будильника</h3>
+            <div class="form-group">
+                <label>Время будильника</label>
+                <div class="input-row">
+                    <input type="number" id="alarmHours" placeholder="ЧЧ" min="0" max="23" value="7">
+                    <span>:</span>
+                    <input type="number" id="alarmMinutes" placeholder="ММ" min="0" max="59" value="0">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Длительность рассвета (минут)</label>
+                <input type="number" id="dawnDuration" min="1" max="60" value="10">
+            </div>
+            <button onclick="setAlarmAndDawn()">Применить настройки</button>
         </div>
+        
         <div class="card">
-            <h3>Настройки ленты</h3>
-            <label for="ledCount">Количество диодов (1-255):</label>
-            <input type="number" id="ledCount" min="1" max="255" value="29"><br>
-            <label for="brighness">Яркость (1-255):</label>
-            <input type="number" id="brighness"  min="1" max="255" value="128"><br>
-            <button onclick="setStrip()">Применить</button>
+            <h3>💡 Настройки ленты</h3>
+            <div class="form-group">
+                <label>Количество диодов (1-255)</label>
+                <input type="number" id="ledCount" min="1" max="255" value="29">
+            </div>
+            <div class="form-group">
+                <label>Яркость (1-255)</label>
+                <input type="number" id="brightness" min="1" max="255" value="128">
+            </div>
+            <div class="button-row">
+                <button onclick="setStrip()">Применить</button>
+                <button onclick="lightOn()" class="secondary">Включить</button>
+                <button onclick="lightOff()" class="secondary">Выключить</button>
+            </div>
         </div>
+        
         <div class="card">
-            <h3>Управление</h3>
-            <button onclick="beeperTestAlarm()">Тест громкости будильника</button>
-            <button onclick="beeperStop()">Прекратить мелодию</button><br>
-            <button onclick="lightOn()">Вкл. ленту</button>
-            <button onclick="lightOff()">Откл. ленту</button>
+            <h3>🔊 Тестирование звука</h3>
+            <div class="button-row">
+                <button onclick="beeperTestAlarm()">Вкл. сигнал</button>
+                <button onclick="beeperStop()">Остановить</button>
+            </div>
         </div>
+        
         <div class="card">
-            <h3>Информация</h3>
-            <p>Весряия прошивки: 1.0.0</p>
-            <button onclick='window.location.href="/update"'>Обновление прошивки</button>
+            <h3>ℹ️ Информация</h3>
+            <div class="status-grid">
+                <div class="status-item">
+                    <div>Версия прошивки</div>
+                    <div>1.0.0</div>
+                </div>
+                <div class="status-item">
+                    <div>Состояние</div>
+                    <div id="connection-status">Подключение...</div>
+                </div>
+            </div>
+            <button onclick='location.href="/update"'>Обновление прошивки</button>
+        </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', (event) => {
-            initialize();
-        });
+        document.addEventListener('DOMContentLoaded', initialize);
 
         function initialize() {
             fetch('/status')
-              .then(r => r.json())
-              .then(data => {
-                  document.getElementById('alarmHours').value = data.alarm.split(':')[0];
-                  document.getElementById('alarmMinutes').value = data.alarm.split(':')[1];
-                  document.getElementById('ledCount').value = data.ledCount;
-                  document.getElementById('brighness').value = data.ledBrightness;
-                  document.getElementById('dawnDuration').value = data.dawnDuration;
-              })
-              .catch(err => {
-                  console.error('Error loading initial settings', err);
-              });
+                .then(r => r.json())
+                .then(data => {
+                    const [h, m] = data.alarm.split(':');
+                    document.getElementById('alarmHours').value = h;
+                    document.getElementById('alarmMinutes').value = m;
+                    document.getElementById('ledCount').value = data.ledCount;
+                    document.getElementById('brightness').value = data.ledBrightness;
+                    document.getElementById('dawnDuration').value = data.dawnDuration;
+                    updateConnectionStatus(true);
+                })
+                .catch(() => updateConnectionStatus(false));
         }
               
         function updateStatus() {
             fetch('/status')
                 .then(r => r.json())
                 .then(data => {
-                    const statusElement = document.getElementById('status');
-                    statusElement.innerHTML = 
-                        `🕒 Время: <b>${data.time}</b><br>` +
-                        `⏰ Будильник: <b>${data.alarm}</b> <span class="${data.alarmEnabled ? 'on' : 'off'}">${data.alarmEnabled ? 'ВКЛ.' : 'ОТКЛ.'}</span><br>` +
-                        `⏰ Пропускать субботу и воскресенье: <span class="${data.isMuteWeekend ? 'on' : 'off'}">${data.isMuteWeekend ? 'ДА' : 'НЕТ'}</span><br>` +
-                        `🌅 Рассвет: <b>${data.dawn}</b> (${data.dawnDuration} минут)<br>` +
-                        `📶 WiFi: <b>${data.wifi}</b><br>` +
-                        `📶 RSSI: <b>${data.rssi} dBm</b><br>` +
-                        `💡 Количество диодов: <b>${data.ledCount}</b><br>`+
-                        `💡 Яркость: <b>${data.ledBrightness}</b>`;
+                    document.getElementById('status').innerHTML = 
+                        `<div class="status-grid">
+                            <div class="status-item"><div>🕒 Время</div><div>${data.time}</div></div>
+                            <div class="status-item"><div>📶 WiFi</div><div>${data.wifi} (${data.rssi}dBm)</div></div>
+                        </div>
+                        <div class="status-grid">
+                            <div class="status-item"><div>⏰ Будильник</div><div>${data.alarm} <span class="${data.alarmEnabled?'on':'off'}">${data.alarmEnabled?'ВКЛ':'ВЫКЛ'}</span></div></div>
+                            <div class="status-item"><div>📅 Прорускать субботу и воскресенье</div><div><span class="${data.isMuteWeekend?'on':'off'}">${data.isMuteWeekend?'ДА':'НЕТ'}</span></div></div>
+                        </div>
+                        <div class="status-grid">
+                            <div class="status-item"><div>🌅 Рассвет</div><div>${data.dawn} (${data.dawnDuration}мин)</div></div>
+                        </div>
+                        <div class="status-grid">
+                            <div class="status-item"><div>💡 Диоды</div><div>${data.ledCount}</div></div>
+                            <div class="status-item"><div>💡 Яркость</div><div>${data.ledBrightness}</div></div>
+                        </div>`;
                 })
-                .catch(err => {
-                    document.getElementById('status').innerHTML = 'Error loading status';
-                });
+                .catch(() => document.getElementById('status').innerHTML = 'Ошибка загрузки статуса');
         }
 
-        function setAlarm() {
-            const hours = document.getElementById('alarmHours').value.padStart(2, '0');
-            const minutes = document.getElementById('alarmMinutes').value.padStart(2, '0');
-            fetch('/setAlarm?h=' + hours + '&m=' + minutes)
-                .then(updateStatus)
-                .catch(err => alert('Error setting alarm'));
-        }
-        function setDawnDuration() {
-            const dawnDuration = document.getElementById('dawnDuration').value; 
-            fetch(`/setDawnDuration?duration=${dawnDuration}`)
-                .then(() => alert('Настройки рассвета сохранены успешно'))
-                .catch(err => alert('Ошибка сохранения настроек рассвета'));
+        function setAlarmAndDawn() {
+            const h = document.getElementById('alarmHours').value.padStart(2,'0');
+            const m = document.getElementById('alarmMinutes').value.padStart(2,'0');
+            const d = document.getElementById('dawnDuration').value;
+            
+            fetch('/setAlarm?h='+h+'&m='+m)
+                .then(() => fetch('/setDawnDuration?duration='+d))
+                .then(() => {
+                    updateStatus();
+                    alert('Настройки сохранены');
+                })
+                .catch(() => alert('Ошибка сохранения'));
         }
 
         function setStrip() {
-            const ledCount = document.getElementById('ledCount').value; 
-            const brightness = document.getElementById('brighness').value;
-            fetch(`/setStrip?count=${ledCount}&brightness=${brightness}`)
-                .then(() => alert('Настройки ленты сохранены успешно'))
-                .catch(err => alert('Ошибка сохранения настроек ленты'));
+            const c = document.getElementById('ledCount').value; 
+            const b = document.getElementById('brightness').value;
+            fetch('/setStrip?count='+c+'&brightness='+b)
+                .then(() => {
+                    updateStatus();
+                    alert('Настройки ленты сохранены');
+                })
+                .catch(() => alert('Ошибка сохранения'));
         }
 
         function toggleAlarm() {
-            fetch('/toggleAlarm').then(updateStatus);
+            fetch('/toggleAlarm').then(updateStatus).catch(() => alert('Ошибка'));
         }
 
         function toggleMuteWeekend() {
-            fetch('/toggleMuteWeekend').then(updateStatus);
+            fetch('/toggleMuteWeekend').then(updateStatus).catch(() => alert('Ошибка'));
         }
 
-        function lightOn() { 
-            fetch('/lightOn').then(() => console.log('Light turned on')); 
-        }
-        
-        function lightOff() { 
-            fetch('/lightOff').then(() => console.log('Light turned off')); 
+        function lightOn() { fetch('/lightOn').catch(() => alert('Ошибка')); }
+        function lightOff() { fetch('/lightOff').catch(() => alert('Ошибка')); }
+        function beeperTestAlarm() { fetch('/beeperTestAlarm').catch(() => alert('Ошибка')); }
+        function beeperStop() { fetch('/beeperStop').catch(() => alert('Ошибка')); }
+
+        function updateConnectionStatus(connected) {
+            const el = document.getElementById('connection-status');
+            el.textContent = connected ? 'Подключено' : 'Ошибка подключения';
+            el.style.color = connected ? 'green' : 'red';
         }
 
-        function beeperTestAlarm() { 
-            fetch('/beeperTestAlarm').then(() => console.log('Beeper ramp started')); 
-        }
-        function beeperStop() { 
-            fetch('/beeperStop').then(() => console.log('Beeper stopped')); 
-        }
-        // Auto-update status every 5 seconds
         setInterval(updateStatus, 5000);
         updateStatus();
     </script>
