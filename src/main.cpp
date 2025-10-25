@@ -28,7 +28,7 @@ void setup() {
   encoder.begin();
 
   digitalWrite(STATUS_LED_PIN, HIGH); // LED off initially
-  beeper.startOneBeep();
+  // beeper.startOneBeep();
   Serial.println("System ready!");
 }
 
@@ -36,6 +36,7 @@ void loop() {
   ui.update();
   alarmClock.update();
   //  digitalWrite(STATUS_LED_PIN, alarmClock.isAlarmEnabled() ? LOW : HIGH);
+  // ledStrip.dawn(512);
 
   if (alarmClock.isDawnTiggered()) {
     ledStrip.dawn(alarmClock.dawnProgress());

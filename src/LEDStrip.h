@@ -100,10 +100,10 @@ public:
 
       if (i < fullLeds) {
         // Полностью включенные
-        leds[index] = CHSV(16, 255, _brightness);
+        leds[index] = CHSV(16, 255, 255);
       } else if (i == fullLeds) {
         // Плавно включающийся светодиод
-        uint8_t brightness = (uint8_t)(_brightness * fractionalPart);
+        uint8_t brightness = (uint8_t)(255 * fractionalPart);
         leds[index] = CHSV(16, 255, brightness);
       } else {
         // Выключенные
@@ -155,7 +155,7 @@ private:
 
     for (int i = 0; i < enabledCount && i < _ledCount; i++) {
       int index = _reverse ? (_ledCount - 1 - i) : i;
-      leds[index] = CHSV((uint8_t) hueOffset + (i * 5), 255, 255);
+      leds[index] = CHSV((uint8_t)hueOffset + (i * 5), 255, 255);
     }
 
     if (millis() - lastRainbowUpdate > (100 / _speed)) {
