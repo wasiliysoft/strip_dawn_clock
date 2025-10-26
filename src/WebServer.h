@@ -182,7 +182,7 @@ private:
                         </div>
                         <div class="status-grid">
                             <div class="status-item"><div>⏰ Будильник</div><div>${data.alarm} <span class="${data.alarmEnabled?'on':'off'}">${data.alarmEnabled?'ВКЛ':'ВЫКЛ'}</span></div></div>
-                            <div class="status-item"><div>📅 Прорускать субботу и воскресенье</div><div><span class="${data.isMuteWeekend?'on':'off'}">${data.isMuteWeekend?'ДА':'НЕТ'}</span></div></div>
+                            <div class="status-item"><div>📅 Пропускать субботу и воскресенье</div><div><span class="${data.isMuteWeekend?'on':'off'}">${data.isMuteWeekend?'ДА':'НЕТ'}</span></div></div>
                         </div>
                         <div class="status-grid">
                             <div class="status-item"><div>🌅 Рассвет</div><div>${data.dawn} (${data.dawnDuration}мин)</div></div>
