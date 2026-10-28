@@ -104,7 +104,8 @@ public:
   bool isWeekEnd() const {
     return timeClient.getDay() % 6 == 0; // 0 - Sunday, 6 - Saturday
   }
-
+  bool isTimeSet() const { return timeClient.isTimeSet(); }
+  int getAlarmStep() const { return alarmStep; }
   // Возвращает прогресс рассвета от 0 до 1024
   unsigned long dawnProgress() {
     unsigned long now = timeClient.getEpochTime();

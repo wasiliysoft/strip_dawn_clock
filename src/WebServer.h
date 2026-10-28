@@ -34,6 +34,7 @@ public:
     server.on("/beeperTestAlarm", [this]() { this->handleBeeperTestAlarm(); });
     server.on("/beeperStop", [this]() { this->handleStopBeeper(); });
     server.on("/setStrip", [this]() { this->handleSetStrip(); });
+    server.on("/diag", [this]() { this->handleDiag(); });
     httpUpdater.setup(&server);
     server.begin();
 
@@ -299,6 +300,25 @@ setInterval(updateStatus, 5000);
   void handleBeeperTestAlarm() {
     beeper.startAlarmBeep();
     server.send(200, "text/plain", "Beeper started");
+  }
+
+  void handleDiag() {
+    JsonDocument doc;
+    doc["uptime"] = millis() / 1000;
+    doc["freeHeap"] = ESP.getFreeHeap();
+    doc["fragmentation"] = ESP.getHeapFragmentation();
+    doc["rssi"] = WiFi.RSSI();
+    doc["ip"] = WiFi.localIP().toString();
+    doc["timeSet"] = alarmClock.isTimeSet();
+    doc["alarmStep"] = alarmClock.getAlarmStep();
+    doc["alarmEnabled"] = alarmClock.isAlarmEnabled();
+    doc["dawnDuration"] = config.dawnDuration;
+    doc["dawn"] = alarmClock.getDawnString();
+    doc["alarm"] = alarmClock.getAlarmString();
+
+    String response;
+    serializeJson(doc, response);
+    server.send(200, "application/json", response);
   }
 };
 
