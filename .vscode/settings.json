@@ -6,7 +6,7 @@
         "limits": "cpp"
     },
     "files.exclude": {
-        "lib": true,
+        // "lib": true,
         // "**/build": true,
         // "**/dist": true,
         "**/.git": true,

@@ -20,7 +20,7 @@ private:
   unsigned long dawnStartEpoch = 0;
 
 public:
-  AlarmClock() : timeClient(ntpUDP, "pool.ntp.org", 18000, 60000) {}
+  AlarmClock() : timeClient(ntpUDP, "192.168.4.1", 18000, 60000) {}
 
   void begin() {
     timeClient.begin();

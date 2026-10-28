@@ -142,7 +142,7 @@ private:
             <div class="status-grid">
                 <div class="status-item">
                     <div>Версия прошивки</div>
-                    <div>1.0.0</div>
+                    <div>1.1.0</div>
                 </div>
                 <div class="status-item">
                     <div>Состояние</div>
