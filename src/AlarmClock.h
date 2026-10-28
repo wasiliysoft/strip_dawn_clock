@@ -111,10 +111,17 @@ public:
 
 private:
   void tick() {
+    static int lastMinutes = -1;   // -1 = «ещё не инициализировано»
+
+    if (!timeClient.isTimeSet()) return;
     int currentMinute = timeClient.getMinutes();
-    int currentHour = timeClient.getHours();
-    static int lastMinutes = 0; // инициализация при первом вызове,
-                                // хранит занчение между вызовами
+    int currentHour   = timeClient.getHours();
+
+    if (lastMinutes == -1) {
+      lastMinutes = currentMinute;  // первый тик — только запоминаем
+      return;
+    }
+
     if (currentMinute != lastMinutes) {
       lastMinutes = currentMinute;
       if (config.alarm.enabled && !(config.isMuteWeekend && isWeekEnd())) {
