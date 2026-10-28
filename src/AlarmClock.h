@@ -24,8 +24,14 @@ public:
 
   void begin() {
     timeClient.begin();
-    timeClient.forceUpdate();
+    // Пытаемся синхронизироваться, но не висим, если сети нет
+    for (int i = 0; i < 10 && !timeClient.isTimeSet(); ++i) {
+      timeClient.forceUpdate();
+      delay(200);
+    }
     calculateDawnTime();
+    Serial.printf("NTP time set: %s\n",
+                  timeClient.isTimeSet() ? "yes" : "no (will retry in loop)");
   }
 
   void update() {
@@ -111,14 +117,15 @@ public:
 
 private:
   void tick() {
-    static int lastMinutes = -1;   // -1 = «ещё не инициализировано»
+    static int lastMinutes = -1; // -1 = «ещё не инициализировано»
 
-    if (!timeClient.isTimeSet()) return;
+    if (!timeClient.isTimeSet())
+      return;
     int currentMinute = timeClient.getMinutes();
-    int currentHour   = timeClient.getHours();
+    int currentHour = timeClient.getHours();
 
     if (lastMinutes == -1) {
-      lastMinutes = currentMinute;  // первый тик — только запоминаем
+      lastMinutes = currentMinute; // первый тик — только запоминаем
       return;
     }
 
@@ -157,10 +164,11 @@ private:
   }
 
   void calculateDawnTime() {
-    int total = (int)config.alarm.hours * 60 + (int)config.alarm.minutes
-                - (int)config.dawnDuration;
-    if (total < 0) total += 1440;
-    config.dawn.hours   = (uint8_t)(total / 60);
+    int total = (int)config.alarm.hours * 60 + (int)config.alarm.minutes -
+                (int)config.dawnDuration;
+    if (total < 0)
+      total += 1440;
+    config.dawn.hours = (uint8_t)(total / 60);
     config.dawn.minutes = (uint8_t)(total % 60);
   }
 };
