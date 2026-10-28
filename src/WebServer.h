@@ -147,7 +147,13 @@ private:
 <script>
 const $ = id => document.getElementById(id);
 const on = b => `<b class="${b?'ok':'err'}">${b?'ВКЛ':'ВЫКЛ'}</b>`;
-
+function rssiInfo(dbm) {
+  if (dbm >= -60) return { text: 'отлично', cls: 'ok' };
+  if (dbm >= -70) return { text: 'хорошо',  cls: 'ok' };
+  if (dbm >= -80) return { text: 'слабо',   cls: ''    };
+  if (dbm >= -90) return { text: 'плохо',   cls: 'err' };
+  return              { text: 'нет связи', cls: 'err' };
+}
 function updateStatus() {
   fetch('/status')
     .then(r => r.json())
@@ -157,11 +163,20 @@ function updateStatus() {
          <div><span>Будильник</span><span>${d.alarm} ${on(d.alarmEnabled)}</span></div>
          <div><span>Рассвет</span><span>${d.dawn} (${d.dawnDuration} мин)</span></div>
          <div><span>Пропуск выходных</span><span>${on(d.isMuteWeekend)}</span></div>`;
-      $('wifi').textContent = `${d.rssi}`;
+      const r = rssiInfo(d.rssi);
+      const w = $('wifi');
+      w.textContent = `${d.rssi} dBm (${r.text})`;
+      w.className = r.cls;
 
-      const c = $('conn'); c.textContent = 'OK'; c.className = 'ok';
+      const c = $('conn'); 
+      c.textContent = 'OK'; 
+      c.className = 'ok';
     })
-    .catch(() => { const c = $('conn'); c.textContent = 'Нет связи'; c.className = 'err'; });
+    .catch(() => { 
+      const c = $('conn'); 
+      c.textContent = 'Нет связи'; 
+      c.className = 'err'; 
+    });
 }
 
 function init() {
