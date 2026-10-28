@@ -157,14 +157,11 @@ private:
   }
 
   void calculateDawnTime() {
-    if (config.alarm.minutes >= config.dawnDuration) {
-      config.dawn.hours = config.alarm.hours;
-      config.dawn.minutes = config.alarm.minutes - config.dawnDuration;
-    } else {
-      config.dawn.hours =
-          (config.alarm.hours == 0) ? 23 : config.alarm.hours - 1;
-      config.dawn.minutes = 60 - (config.dawnDuration - config.alarm.minutes);
-    }
+    int total = (int)config.alarm.hours * 60 + (int)config.alarm.minutes
+                - (int)config.dawnDuration;
+    if (total < 0) total += 1440;
+    config.dawn.hours   = (uint8_t)(total / 60);
+    config.dawn.minutes = (uint8_t)(total % 60);
   }
 };
 
